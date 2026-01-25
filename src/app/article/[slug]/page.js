@@ -1,431 +1,75 @@
-"use client";
-
 import React from "react";
-import {
-    Calendar, User, ArrowLeft, BookOpen, Clock, ChevronRight,
-    FileText, PlayCircle, CheckCircle, Lock
-} from "lucide-react";
-import { useRouter } from "next/navigation";
+import { headers } from "next/headers";
+import ArticleClient from "./ArticleClient";
 
-// Premium custom renderer for Learning Content
-const ArticleRenderer = ({ data }) => {
-    if (!data) return null;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-    let contentObj;
+async function getArticle(slug) {
+    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://api.ternakproperti.com";
     try {
-        contentObj = typeof data === 'string' ? JSON.parse(data) : data;
-    } catch (e) {
-        return <div className="article-prose-content" dangerouslySetInnerHTML={{ __html: data }} />;
+        const res = await fetch(`${baseUrl}/api/post/slug/${slug}`, {
+            headers: {
+                "Content-Type": "application/json",
+            },
+            cache: 'no-store'
+        });
+
+        if (!res.ok) return null;
+
+        const json = await res.json();
+        if (json.success && json.data) {
+            return {
+                title: json.data.title,
+                author: json.data.author || "Ternak Properti Team",
+                date: json.data.create_at || "Just now",
+                content: json.data.content,
+                meta_description: json.data.meta_description || json.data.title
+            };
+        }
+        return null;
+    } catch (err) {
+        console.error("Fetch article error:", err);
+        return null;
+    }
+}
+
+export async function generateMetadata({ params }) {
+    const { slug } = await params;
+    const article = await getArticle(slug);
+
+    if (!article) {
+        return {
+            title: "Article Not Found",
+        };
     }
 
-    if (!contentObj) return null;
-
-    const renderTiptapNode = (node, index) => {
-        if (!node) return null;
-        if (node.type === 'text') {
-            let content = node.text;
-            if (node.marks) {
-                node.marks.forEach(mark => {
-                    if (mark.type === 'bold') content = <strong key={index}>{content}</strong>;
-                    if (mark.type === 'italic') content = <em key={index}>{content}</em>;
-                    if (mark.type === 'underline') content = <u key={index}>{content}</u>;
-                    if (mark.type === 'link') content = <a key={index} href={mark.attrs.href} target="_blank" rel="noopener">{content}</a>;
-                });
-            }
-            return content;
-        }
-
-        const children = node.content ? node.content.map((child, i) => renderTiptapNode(child, i)) : null;
-
-        switch (node.type) {
-            case 'doc': return <div key={index} className="article-tiptap-content">{children}</div>;
-            case 'paragraph': return <p key={index} style={{ textAlign: node.attrs?.textAlign }}>{children}</p>;
-            case 'heading':
-                const Tag = `h${node.attrs?.level || 1}`;
-                return <Tag key={index} style={{ textAlign: node.attrs?.textAlign }}>{children}</Tag>;
-            case 'bulletList': return <ul key={index}>{children}</ul>;
-            case 'orderedList': return <ol key={index}>{children}</ol>;
-            case 'listItem': return <li key={index}>{children}</li>;
-            case 'blockquote': return <blockquote key={index}>{children}</blockquote>;
-            case 'image':
-                return (
-                    <figure key={index} style={{ textAlign: node.attrs?.textAlign }}>
-                        <img src={node.attrs.src} alt={node.attrs.alt} className="max-w-full rounded-lg shadow-sm" />
-                    </figure>
-                );
-            case 'horizontalRule': return <hr key={index} className="prose-hr" />;
-            case 'hardBreak': return <br key={index} />;
-            default: return null;
+    return {
+        title: `${article.title} | Ternak Properti`,
+        description: article.meta_description,
+        openGraph: {
+            title: article.title,
+            description: article.meta_description,
+            type: 'article',
         }
     };
+}
 
-    if (contentObj.type === 'doc') {
-        return <div className="article-renderer tiptap">{renderTiptapNode(contentObj, 0)}</div>;
-    }
+export default async function PublicArticlePage({ params }) {
+    headers(); // Force request-bound dynamic rendering and prevent browser caching
+    const { slug } = await params;
+    const article = await getArticle(slug);
 
-    if (contentObj.blocks) {
+    if (!article) {
         return (
-            <div className="article-renderer editorjs">
-                {contentObj.blocks.map((block, index) => {
-                    switch (block.type) {
-                        case "header":
-                            const Tag = `h${block.data.level || 2}`;
-                            return <Tag key={index} className="rendered-h">{block.data.text}</Tag>;
-                        case "paragraph":
-                            return <p key={index} className="rendered-p" dangerouslySetInnerHTML={{ __html: block.data.text }}></p>;
-                        case "list":
-                            const ListTag = block.data.style === "ordered" ? "ol" : "ul";
-                            return (
-                                <ListTag key={index} className="rendered-list">
-                                    {block.data.items.map((item, i) => (
-                                        <li key={i} dangerouslySetInnerHTML={{ __html: item }}></li>
-                                    ))}
-                                </ListTag>
-                            );
-                        case "checklist":
-                            return (
-                                <div key={index} className="rendered-checklist">
-                                    {block.data.items.map((item, i) => (
-                                        <div key={i} className={`checklist-item ${item.checked ? 'checked' : ''}`}>
-                                            <div className="custom-checkbox">{item.checked && <CheckCircle size={14} />}</div>
-                                            <span dangerouslySetInnerHTML={{ __html: item.text }}></span>
-                                        </div>
-                                    ))}
-                                </div>
-                            );
-                        case "table":
-                            return (
-                                <div key={index} className="table-wrapper">
-                                    <table className="rendered-table">
-                                        <tbody>
-                                            {block.data.content.map((row, i) => (
-                                                <tr key={i}>
-                                                    {row.map((cell, j) => (
-                                                        block.data.withHeadings && i === 0
-                                                            ? <th key={j} dangerouslySetInnerHTML={{ __html: cell }}></th>
-                                                            : <td key={j} dangerouslySetInnerHTML={{ __html: cell }}></td>
-                                                    ))}
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            );
-                        case "image":
-                            return (
-                                <figure key={index} className="rendered-figure">
-                                    <img src={block.data.file?.url || "/placeholder.jpg"} alt={block.data.caption} />
-                                    {block.data.caption && <figcaption>{block.data.caption}</figcaption>}
-                                </figure>
-                            );
-                        case "quote":
-                            return (
-                                <blockquote key={index} className="rendered-quote">
-                                    <div className="quote-icon">“</div>
-                                    <p>{block.data.text}</p>
-                                    {block.data.caption && <footer>— {block.data.caption}</footer>}
-                                </blockquote>
-                            );
-                        case "delimiter":
-                            return <div key={index} className="rendered-divider"><span>•••</span></div>;
-                        default:
-                            return null;
-                    }
-                })}
-            </div>
-        );
-    }
-    return null;
-};
-
-export default function PublicArticlePage({ params }) {
-    const router = useRouter();
-    const [article, setArticle] = React.useState(null);
-    const [loading, setLoading] = React.useState(true);
-
-    React.useEffect(() => {
-        const fetchArticle = async () => {
-            try {
-                const { slug } = params;
-                if (!slug) { setLoading(false); return; }
-
-                // Proxy fetch to avoid CORS
-                const res = await fetch(`/api/post/slug/${slug}`);
-                const json = await res.json();
-
-                if (json.success && json.data) {
-                    setArticle({
-                        title: json.data.title,
-                        author: json.data.author || "Ternak Properti Team",
-                        date: json.data.create_at || "Just now",
-                        content: json.data.content
-                    });
-                } else {
-                    router.push("/404");
-                }
-            } catch (err) {
-                console.error("Fetch article error:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchArticle();
-    }, [params, router]);
-
-    if (loading) {
-        return (
-            <div className="loading-container">
-                <div className="learning-loader">
-                    <BookOpen className="loader-icon" size={40} />
-                    <div className="progress-bar-mock"></div>
-                    <p>Membuka Modul Eksklusif...</p>
+            <div className="flex items-center justify-center h-screen bg-slate-50">
+                <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-slate-100">
+                    <p className="text-xl font-bold text-slate-800 mb-2">Artikel Tidak Ditemukan</p>
+                    <p className="text-slate-500">Maaf, artikel yang Anda cari tidak tersedia atau telah dihapus.</p>
                 </div>
-                <style jsx>{`
-                    .loading-container { height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; }
-                    .learning-loader { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
-                    .loader-icon { color: #3b82f6; animation: bounce 1s infinite; }
-                    .progress-bar-mock { width: 200px; height: 4px; background: #e2e8f0; border-radius: 10px; overflow: hidden; position: relative; }
-                    .progress-bar-mock::after { content: ''; position: absolute; left: 0; top: 0; height: 100%; width: 40%; background: #3b82f6; animation: slide 2s infinite; }
-                    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-                    @keyframes slide { from { left: -40%; } to { left: 100%; } }
-                `}</style>
             </div>
         );
     }
 
-    if (!article) return null;
-
-    return (
-        <div className="learning-module-container">
-            {/* Header / Navbar Premium */}
-            <nav className="module-nav">
-                <div className="nav-wrapper">
-                    <div className="nav-left">
-                        <button className="back-button" onClick={() => window.history.back()}>
-                            <ArrowLeft size={20} />
-                        </button>
-                        <div className="brand-logo">
-                            <img src="/assets/logo.png" alt="Logo" className="logo-img" />
-                        </div>
-                    </div>
-                    <div className="nav-center">
-                        <div className="module-badge">
-                            <Lock size={12} className="icon-gold" />
-                            <span>EXCLUSIVE MODULE ACCESS</span>
-                        </div>
-                    </div>
-                    <div className="nav-right">
-                        <button className="btn-complete-module">
-                            Selesaikan Modul
-                            <CheckCircle size={18} />
-                        </button>
-                    </div>
-                </div>
-            </nav>
-
-            <div className="module-layout">
-                {/* Sidebar Curriculum (Left) */}
-                <aside className="curriculum-sidebar">
-                    <div className="sidebar-section">
-                        <div className="sidebar-title">
-                            <h3>Kurikulum Modul</h3>
-                            <p>5 Pelajaran • 45 Menit</p>
-                        </div>
-                        <div className="lesson-list">
-                            <div className="lesson-item active">
-                                <div className="lesson-icon"><FileText size={18} /></div>
-                                <div className="lesson-meta">
-                                    <span className="lesson-title">{article.title}</span>
-                                    <span className="lesson-type">Reading • 12 min</span>
-                                </div>
-                                <div className="lesson-status"><CheckCircle size={16} className="text-blue" /></div>
-                            </div>
-                            <div className="lesson-item locked">
-                                <div className="lesson-icon"><PlayCircle size={18} /></div>
-                                <div className="lesson-meta">
-                                    <span className="lesson-title">Fundamental Investasi Properti</span>
-                                    <span className="lesson-type">Video • 20 min</span>
-                                </div>
-                                <div className="lesson-status"><Lock size={14} className="text-gray" /></div>
-                            </div>
-                            <div className="lesson-item locked">
-                                <div className="lesson-icon"><FileText size={18} /></div>
-                                <div className="lesson-meta">
-                                    <span className="lesson-title">Analisis Cashflow Properti</span>
-                                    <span className="lesson-type">Worksheet • 15 min</span>
-                                </div>
-                                <div className="lesson-status"><Lock size={14} className="text-gray" /></div>
-                            </div>
-                        </div>
-                    </div>
-                </aside>
-
-                {/* Main Content Area (Right) */}
-                <main className="content-module-area">
-                    <div className="reading-container">
-                        <header className="module-header">
-                            <nav className="breadcrumb-nav">
-                                <span>Dashboard</span> <ChevronRight size={12} />
-                                <span>Education Center</span> <ChevronRight size={12} />
-                                <span className="active-breadcrumb">{article.title}</span>
-                            </nav>
-                            <h1 className="content-title">{article.title}</h1>
-                            <div className="content-meta">
-                                <div className="meta-box">
-                                    <div className="meta-user">
-                                        <div className="avatar-mini">
-                                            <img src={`https://ui-avatars.com/api/?name=${article.author}&background=0ea5e9&color=fff`} alt="Author" />
-                                        </div>
-                                        <span>{article.author}</span>
-                                    </div>
-                                    <div className="meta-sep"></div>
-                                    <div className="meta-date">
-                                        <Calendar size={14} />
-                                        <span>{article.date}</span>
-                                    </div>
-                                    <div className="meta-sep"></div>
-                                    <div className="meta-timer">
-                                        <Clock size={14} />
-                                        <span>12 Menit Belajar</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </header>
-
-                        <div className="prose-body">
-                            <ArticleRenderer data={article.content} />
-                        </div>
-
-                        <footer className="reading-footer">
-                            <div className="footer-gradient"></div>
-                            <div className="footer-navigation">
-                                <button className="btn-nav prev disabled">
-                                    <ArrowLeft size={18} />
-                                    <span>Kembali ke Sebelumnya</span>
-                                </button>
-                                <button className="btn-nav next">
-                                    <span>Lanjut ke Modul Berikutnya</span>
-                                    <ChevronRight size={18} />
-                                </button>
-                            </div>
-                        </footer>
-                    </div>
-                </main>
-            </div>
-
-            <style jsx>{`
-                .learning-module-container {
-                    background: #fff;
-                    min-height: 100vh;
-                    display: flex;
-                    flex-direction: column;
-                    font-family: 'Inter', system-ui, sans-serif;
-                }
-
-                /* Navbar Style */
-                .module-nav {
-                    height: 72px;
-                    background: #fff;
-                    border-bottom: 1px solid #f1f5f9;
-                    position: sticky;
-                    top: 0;
-                    z-index: 1000;
-                    display: flex;
-                    align-items: center;
-                    padding: 0 1.5rem;
-                }
-                .nav-wrapper { width: 100%; display: flex; justify-content: space-between; align-items: center; }
-                .nav-left { display: flex; align-items: center; gap: 1.25rem; }
-                .back-button { width: 36px; height: 36px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748b; transition: 0.2s; }
-                .back-button:hover { background: #f8fafc; color: #1e293b; border-color: #cbd5e1; }
-                .logo-img { height: 28px; width: auto; }
-
-                .module-badge { background: #fffbeb; border: 1px solid #fde68a; padding: 6px 14px; border-radius: 50px; display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px; }
-                .icon-gold { color: #f59e0b; }
-
-                .btn-complete-module { background: #0ea5e9; color: white; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: 0.2s; font-size: 14px; }
-                .btn-complete-module:hover { background: #0284c7; transform: translateY(-1px); box-shadow: 0 5px 15px rgba(14, 165, 233, 0.25); }
-
-                /* Layout Grid */
-                .module-layout { flex: 1; display: flex; }
-
-                /* Curriculum Sidebar */
-                .curriculum-sidebar { width: 360px; background: #f8fafc; border-right: 1px solid #f1f5f9; position: sticky; top: 72px; height: calc(100vh - 72px); overflow-y: auto; padding: 2rem 1.5rem; }
-                .sidebar-title { margin-bottom: 2rem; }
-                .sidebar-title h3 { font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 4px 0; }
-                .sidebar-title p { font-size: 13px; color: #64748b; margin: 0; font-weight: 500; }
-
-                .lesson-list { display: flex; flex-direction: column; gap: 12px; }
-                .lesson-item { padding: 1rem; border-radius: 14px; background: #fff; border: 1px solid #e2e8f0; display: flex; align-items: flex-start; gap: 1rem; cursor: pointer; transition: 0.2s; position: relative; }
-                .lesson-item:hover:not(.locked) { border-color: #3b82f6; background: #eff6ff; }
-                .lesson-item.active { border-color: #3b82f6; background: #eff6ff; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1); }
-                .lesson-item.locked { opacity: 0.6; cursor: not-allowed; border-style: dashed; }
-                .lesson-icon { width: 40px; height: 40px; border-radius: 10px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #64748b; flex-shrink: 0; }
-                .active .lesson-icon { background: #3b82f6; color: white; }
-                .lesson-meta { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-                .lesson-title { font-size: 14px; font-weight: 700; color: #1e293b; line-height: 1.4; }
-                .lesson-type { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
-                .text-blue { color: #3b82f6; }
-                .text-gray { color: #cbd5e1; }
-
-                /* Main Module Area */
-                .content-module-area { flex: 1; min-width: 0; background: #fff; }
-                .reading-container { max-width: 820px; margin: 4rem auto; padding: 0 2rem; }
-
-                .breadcrumb-nav { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8; font-weight: 600; margin-bottom: 2rem; }
-                .active-breadcrumb { color: #3b82f6; }
-
-                .content-title { font-size: 42px; font-weight: 900; color: #1e293b; line-height: 1.15; margin-bottom: 1.5rem; letter-spacing: -0.03em; }
-                .content-meta { margin-bottom: 3rem; }
-                .meta-box { display: flex; align-items: center; gap: 1.25rem; font-size: 14px; color: #64748b; font-weight: 500; }
-                .meta-user { display: flex; align-items: center; gap: 0.75rem; color: #1e293b; font-weight: 700; }
-                .avatar-mini { width: 28px; height: 28px; border-radius: 50%; overflow: hidden; }
-                .avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
-                .meta-sep { width: 4px; height: 4px; border-radius: 50%; background: #cbd5e1; }
-                .meta-date, .meta-timer { display: flex; align-items: center; gap: 6px; }
-
-                /* Prose Typography */
-                .prose-body { line-height: 1.9; color: #334155; font-size: 1.15rem; }
-                .prose-body :global(h2) { font-size: 30px; font-weight: 800; color: #1e293b; margin: 3.5rem 0 1.5rem 0; letter-spacing: -0.02em; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem; }
-                .prose-body :global(p) { margin-bottom: 2rem; }
-                .prose-body :global(blockquote) { margin: 3rem 0; padding: 2.5rem; background: #f8fafc; border-radius: 20px; border-left: 6px solid #3b82f6; position: relative; font-style: italic; }
-                .quote-icon { font-size: 80px; color: #dbeafe; position: absolute; top: -10px; left: 15px; opacity: 0.5; font-family: 'Georgia', serif; }
-
-                .table-wrapper { overflow-x: auto; margin: 3rem 0; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-                .rendered-table { width: 100%; border-collapse: collapse; }
-                .rendered-table th { background: #f8fafc; padding: 16px 20px; font-size: 13px; font-weight: 800; color: #475569; text-align: left; border-bottom: 1px solid #e2e8f0; text-transform: uppercase; }
-                .rendered-table td { padding: 16px 20px; font-size: 15px; border-bottom: 1px solid #f1f5f9; }
-
-                .rendered-checklist { margin: 2rem 0; display: flex; flex-direction: column; gap: 10px; }
-                .checklist-item { display: flex; align-items: flex-start; gap: 1rem; padding: 1.25rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; transition: 0.2s; }
-                .checklist-item.checked { background: #f0fdf4; border-color: #bbf7d0; }
-                .checklist-item.checked span { color: #166534; text-decoration: line-through; opacity: 0.7; }
-                .custom-checkbox { width: 22px; height: 22px; border-radius: 6px; border: 2px solid #cbd5e1; background: #fff; display: flex; align-items: center; justify-content: center; color: #16a34a; flex-shrink: 0; margin-top: 2px; }
-                .checked .custom-checkbox { border-color: #16a34a; background: #dcfce7; }
-
-                .rendered-divider { display: flex; justify-content: center; margin: 5rem 0; color: #e2e8f0; letter-spacing: 12px; font-size: 20px; }
-
-                /* Footer Navigation */
-                .reading-footer { margin-top: 8rem; position: relative; padding-bottom: 4rem; }
-                .footer-gradient { height: 150px; background: linear-gradient(to top, #f8fafc, transparent); position: absolute; bottom: 100%; left: 0; right: 0; pointer-events: none; }
-                .footer-navigation { display: flex; justify-content: space-between; gap: 1.5rem; }
-                .btn-nav { display: flex; align-items: center; gap: 12px; padding: 14px 28px; border-radius: 14px; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.2s; }
-                .btn-nav.prev { background: #fff; border: 1px solid #e2e8f0; color: #64748b; }
-                .btn-nav.next { background: #1e293b; color: #fff; border: none; }
-                .btn-nav:hover:not(.disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-                .btn-nav.next:hover { background: #000; }
-                .disabled { opacity: 0.5; cursor: not-allowed; }
-
-                @media (max-width: 1100px) {
-                    .curriculum-sidebar { display: none; }
-                }
-                @media (max-width: 640px) {
-                    .content-title { font-size: 32px; }
-                    .reading-container { padding: 0 1.25rem; }
-                    .meta-box { flex-wrap: wrap; gap: 0.75rem; }
-                    .meta-sep { display: none; }
-                }
-            `}</style>
-        </div>
-    );
+    return <ArticleClient article={article} />;
 }
