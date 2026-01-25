@@ -194,10 +194,21 @@ export function useDashboardData() {
 
       const unpaidCount = unpaidOrders.length;
 
+      // Process bonus articles from active orders
+      const bonusArticles = [];
+      uniqueOrders.forEach(order => {
+        if (order.post_rel && Array.isArray(order.post_rel) && order.post_rel.length > 0) {
+          bonusArticles.push({
+            productName: order.produk_nama || "Produk",
+            posts: order.post_rel
+          });
+        }
+      });
+
       setDashboardData({
         stats: newStats,
         activeOrders: adaptOrders(activeOrders),
-        articles: data?.post_rel || [],
+        articles: bonusArticles,
         customerInfo: customerData || session.user,
         unpaidCount,
       });
