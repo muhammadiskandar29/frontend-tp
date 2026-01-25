@@ -164,7 +164,7 @@ export default function BonusProdukPage() {
                                             <tr>
                                                 <th style={{ width: '35%' }}>NAMA BONUS ARTIKEL</th>
                                                 <th>TAG PRODUK</th>
-                                                <th>STATUS</th>
+                                                <th>TANGGAL DIBUAT</th>
                                                 <th className="text-right">ACTIONS</th>
                                             </tr>
                                         </thead>
@@ -194,9 +194,10 @@ export default function BonusProdukPage() {
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <span className={`status-badge-modern ${article.status === 'published' ? 'is-published' : 'is-draft'}`}>
-                                                            {article.status === 'published' ? 'Published' : 'Draft'}
-                                                        </span>
+                                                        <div className="date-cell">
+                                                            <Calendar size={14} style={{ marginRight: '6px', opacity: 0.5 }} />
+                                                            {article.create_at}
+                                                        </div>
                                                     </td>
                                                     <td>
                                                         <div className="action-buttons-minimal">
@@ -378,6 +379,13 @@ export default function BonusProdukPage() {
                     font-size: 14px;
                     border-bottom: 1px solid #f8fafc;
                     vertical-align: middle;
+                }
+                .date-cell {
+                    display: flex;
+                    align-items: center;
+                    color: #64748b;
+                    font-weight: 500;
+                    font-size: 13px;
                 }
                 .text-right { text-align: right !important; }
                 
