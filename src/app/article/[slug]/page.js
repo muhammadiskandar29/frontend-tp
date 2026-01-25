@@ -57,10 +57,11 @@ async function getArticle(slug, token = null) {
 }
 
 /**
- * 🥈 METADATA (Sync Approach for Debugging)
+ * 🥈 METADATA
  */
-export function generateMetadata({ params }) {
-    const { slug } = params || {};
+export async function generateMetadata({ params }) {
+    const awaitedParams = await params;
+    const { slug } = awaitedParams || {};
     return {
         title: slug
             ? `${slug} | Ternak Properti`
@@ -72,14 +73,14 @@ export function generateMetadata({ params }) {
  * 🥉 MAIN PAGE
  */
 export default async function PublicArticlePage({ params }) {
-    headers(); // force dynamic
+    await headers(); // force dynamic
 
-    // Ambil token dari cookies
-    const cookieStore = cookies();
+    // 🔥 PENTING: Di Next.js 15+, cookies() dan params adalah async
+    const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
 
-    // Pakai plain params sesuai saran
-    const { slug } = params || {};
+    const awaitedParams = await params;
+    const { slug } = awaitedParams || {};
 
     if (!slug) {
         LOG("Slug not found in route params");
@@ -91,7 +92,7 @@ export default async function PublicArticlePage({ params }) {
 
     if (!data) {
         LOG("Article data not found in backend for slug:", slug);
-        notFound(); // ⬅️ Hasil akhir jika data null
+        notFound();
     }
 
     return (
