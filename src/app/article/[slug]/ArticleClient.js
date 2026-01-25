@@ -155,55 +155,50 @@ export default function ArticleClient({ article }) {
 
     return (
         <div className="learning-module-container">
-            {/* Header / Navbar Premium */}
-            <nav className="module-nav">
-                <div className="nav-wrapper">
-                    <div className="nav-left">
-                        <button className="back-button" onClick={() => window.history.back()}>
-                            <ArrowLeft size={20} />
-                        </button>
-                        <div className="brand-logo">
-                            <img src="/assets/logo.png" alt="Logo" className="logo-img" />
-                        </div>
+            {/* Simple Standard Navbar */}
+            <nav className="article-standard-nav">
+                <div className="nav-container-refined">
+                    <button className="back-btn-minimal" onClick={() => window.history.back()}>
+                        <ArrowLeft size={18} />
+                        <span>Kembali</span>
+                    </button>
+                    <div className="center-logo">
+                        <img src="/assets/logo.png" alt="Logo" className="logo-img-small" />
                     </div>
+                    <div className="empty-right"></div>
                 </div>
             </nav>
 
-            <div className="article-main-layout">
-                {/* Main Content Area */}
-                <main className="content-module-area">
-                    <div className="reading-container">
-                        <header className="module-header">
-                            <nav className="breadcrumb-nav">
-                                <span>Dashboard</span> <ChevronRight size={12} />
-                                <span>Education Center</span> <ChevronRight size={12} />
-                                <span className="active-breadcrumb">{article.title}</span>
+            <div className="article-body-wrapper">
+                <main className="article-content-container">
+                    <div className="article-reading-surface">
+                        <header className="article-header-clean">
+                            <nav className="article-breadcrumb">
+                                <span>Dashboard</span>
+                                <ChevronRight size={12} />
+                                <span>Education Center</span>
+                                <ChevronRight size={12} />
+                                <span className="active-path">{article.title}</span>
                             </nav>
-                            <h1 className="content-title">{article.title}</h1>
-                            <div className="content-meta">
-                                <div className="meta-box">
-                                    <div className="meta-user">
-                                        <div className="avatar-mini">
-                                            <img src={`https://ui-avatars.com/api/?name=${article.author}&background=0ea5e9&color=fff`} alt="Author" />
-                                        </div>
-                                        <span>{article.author}</span>
+
+                            <h1 className="article-main-title">{article.title}</h1>
+
+                            <div className="article-meta-clean">
+                                <div className="author-info">
+                                    <div className="author-avatar">
+                                        <img src={`https://ui-avatars.com/api/?name=${article.author}&background=0ea5e9&color=fff`} alt="Author" />
                                     </div>
-                                    <div className="meta-sep"></div>
-                                    <div className="meta-date">
-                                        <Calendar size={14} />
-                                        <span>{article.date}</span>
-                                    </div>
-                                    <div className="meta-sep"></div>
-                                    <div className="meta-timer">
-                                        <Clock size={14} />
-                                        <span>12 Menit Belajar</span>
-                                    </div>
+                                    <span className="author-name">{article.author}</span>
                                 </div>
+                                <span className="meta-dot">•</span>
+                                <span className="meta-item">{article.date}</span>
+                                <span className="meta-dot">•</span>
+                                <span className="meta-item">12 Menit Belajar</span>
                             </div>
                         </header>
 
-                        <div className="prose-body">
-                            {hasMounted ? <ArticleRenderer data={article.content} /> : <div className="animate-pulse bg-gray-100 h-64 rounded-xl"></div>}
+                        <div className="article-prose-refined">
+                            {hasMounted ? <ArticleRenderer data={article.content} /> : <div className="skeleton-loader"></div>}
                         </div>
                     </div>
                 </main>
@@ -218,121 +213,142 @@ export default function ArticleClient({ article }) {
                     font-family: 'Inter', system-ui, sans-serif;
                 }
 
-                /* Navbar Style */
-                .module-nav {
-                    height: 72px;
+                .article-standard-nav {
+                    height: 60px;
                     background: #fff;
-                    border-bottom: 1px solid #f1f5f9;
-                    position: sticky;
-                    top: 0;
-                    z-index: 1000;
+                    border-bottom: 1px solid #edf2f7;
                     display: flex;
                     align-items: center;
-                    padding: 0 1.5rem;
+                    position: sticky;
+                    top: 0;
+                    z-index: 100;
                 }
-                .nav-wrapper { width: 100%; display: flex; justify-content: space-between; align-items: center; }
-                .nav-left { display: flex; align-items: center; gap: 1.25rem; }
-                .back-button { width: 36px; height: 36px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748b; transition: 0.2s; }
-                .back-button:hover { background: #f8fafc; color: #1e293b; border-color: #cbd5e1; }
-                .logo-img { height: 28px; width: auto; }
-
-                .module-badge { background: #fffbeb; border: 1px solid #fde68a; padding: 6px 14px; border-radius: 50px; display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px; }
-                .icon-gold { color: #f59e0b; }
-                /* Layout Grid */
-                .lesson-icon { width: 40px; height: 40px; border-radius: 10px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #64748b; flex-shrink: 0; }
-                .active .lesson-icon { background: #3b82f6; color: white; }
-                .lesson-meta { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-                .lesson-title { font-size: 14px; font-weight: 700; color: #1e293b; line-height: 1.4; }
-                .lesson-type { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
-                .text-blue { color: #3b82f6; }
-                .text-gray { color: #cbd5e1; }
-
-                /* Main Module Area */
-                .content-module-area { flex: 1; min-width: 0; background: #fff; }
-                .reading-container { max-width: 820px; margin: 4rem auto; padding: 0 2rem; }
-
-                .breadcrumb-nav { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8; font-weight: 600; margin-bottom: 2rem; }
-                .active-breadcrumb { color: #3b82f6; }
-
-                .content-title { font-size: 42px; font-weight: 900; color: #1e293b; line-height: 1.15; margin-bottom: 1.5rem; letter-spacing: -0.03em; }
-                .content-meta { margin-bottom: 3rem; }
-                .meta-box { display: flex; align-items: center; gap: 1.25rem; font-size: 14px; color: #64748b; font-weight: 500; }
-                .meta-user { display: flex; align-items: center; gap: 0.75rem; color: #1e293b; font-weight: 700; }
-                .avatar-mini { width: 28px; height: 28px; border-radius: 50%; overflow: hidden; }
-                .avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
-                .meta-sep { width: 4px; height: 4px; border-radius: 50%; background: #cbd5e1; }
-                .meta-date, .meta-timer { display: flex; align-items: center; gap: 6px; }
-
-                /* Prose Typography Refined */
-                .prose-body { 
-                    line-height: 1.8; 
-                    color: #2d3748; 
-                    font-size: 1.125rem; 
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                .nav-container-refined {
+                    max-width: 1200px;
+                    width: 100%;
+                    margin: 0 auto;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 0 2rem;
                 }
-                .prose-body :global(h2) { 
-                    font-size: 1.875rem; 
-                    font-weight: 700; 
-                    color: #1a202c; 
-                    margin: 3rem 0 1.25rem 0; 
-                    line-height: 1.3;
+                .back-btn-minimal {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    background: none;
+                    border: none;
+                    color: #4a5568;
+                    font-size: 14px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    padding: 8px;
+                    border-radius: 8px;
+                    transition: 0.2s;
                 }
-                .prose-body :global(p), .prose-body :global(.rendered-p), .prose-body :global(.tiptap-p) { 
-                    margin-bottom: 1.5rem; 
+                .back-btn-minimal:hover { background: #f7fafc; color: #1a202c; }
+                .logo-img-small { height: 24px; }
+
+                .article-body-wrapper {
+                    background: #fff;
+                    min-height: 100vh;
+                    width: 100%;
                 }
-                
-                /* Refined Image Handling - MUCH SMALLER */
+                .article-content-container {
+                    max-width: 850px;
+                    margin: 0 auto;
+                    padding: 4rem 2rem;
+                }
+                .article-breadcrumb {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 13px;
+                    color: #a0aec0;
+                    font-weight: 500;
+                    margin-bottom: 1.5rem;
+                }
+                .active-path { color: #4299e1; }
+                .article-main-title {
+                    font-size: 3rem;
+                    font-weight: 800;
+                    color: #1a202c;
+                    line-height: 1.2;
+                    margin-bottom: 1.5rem;
+                    letter-spacing: -0.02em;
+                }
+                .article-meta-clean {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    font-size: 14px;
+                    color: #718096;
+                    margin-bottom: 3rem;
+                }
+                .author-info { display: flex; align-items: center; gap: 8px; color: #2d3748; font-weight: 600; }
+                .author-avatar { width: 24px; height: 24px; border-radius: 50%; overflow: hidden; }
+                .author-avatar img { width: 100%; height: 100%; }
+                .meta-dot { color: #cbd5e1; }
+
+                /* CONTENT PROSE */
+                .article-prose-refined {
+                    line-height: 1.8;
+                    color: #2d3748;
+                    font-size: 1.15rem;
+                }
+                .article-prose-refined :global(h2) {
+                    font-size: 1.85rem;
+                    font-weight: 700;
+                    color: #1a202c;
+                    margin: 3.5rem 0 1.5rem;
+                }
+                .article-prose-refined :global(p), .article-prose-refined :global(.rendered-p), .article-prose-refined :global(.tiptap-p) {
+                    margin-bottom: 1.5rem;
+                }
+
+                /* IMAGE FIXED - SMALL & CENTERED */
                 .article-figure {
-                    margin: 2.5rem 0;
+                    margin: 3rem auto;
+                    width: 100%;
+                    max-width: 500px; /* Container max */
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    width: 100%;
+                    justify-content: center;
                 }
                 .article-img-refined {
-                    max-width: 45%;
+                    display: block;
+                    width: auto;
+                    max-width: 350px; /* INI YANG BIKIN KECIL */
                     height: auto;
-                    border-radius: 6px;
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-                    border: 1px solid #edf2f7;
+                    border-radius: 4px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                    margin: 0 auto;
                 }
                 .caption-refined {
-                    margin-top: 0.75rem;
-                    font-size: 0.8125rem;
+                    margin-top: 10px;
+                    font-size: 0.85rem;
                     color: #718096;
                     font-style: italic;
-                    max-width: 45%;
                     text-align: center;
                 }
 
-                .prose-body :global(blockquote) { 
-                    margin: 2.5rem 0; 
-                    padding: 1.5rem 2rem; 
-                    background: #f7fafc; 
-                    border-radius: 12px; 
-                    border-left: 4px solid #4a5568; 
-                    font-style: italic;
-                    color: #4a5568;
+                .skeleton-loader {
+                    width: 100%;
+                    height: 400px;
+                    background: #f7fafc;
+                    border-radius: 12px;
+                    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+                }
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: .5; }
                 }
 
-                .table-wrapper { overflow-x: auto; margin: 2.5rem 0; border: 1px solid #e2e8f0; border-radius: 12px; }
-                .rendered-table { width: 100%; border-collapse: collapse; }
-                .rendered-table th { background: #f7fafc; padding: 12px 16px; font-size: 0.75rem; font-weight: 700; color: #4a5568; text-align: left; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; }
-                .rendered-table td { padding: 12px 16px; font-size: 0.9375rem; border-bottom: 1px solid #edf2f7; }
-
-                .rendered-checklist { margin: 1.5rem 0; display: flex; flex-direction: column; gap: 8px; }
-                .checklist-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; }
-                .checklist-item.checked { background: #f0fff4; border-color: #c6f6d5; }
-                .custom-checkbox { width: 18px; height: 18px; border-radius: 4px; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-                .checked .custom-checkbox { border-color: #48bb78; background: #f0fff4; color: #48bb78; }
-
-                .rendered-divider { display: flex; justify-content: center; margin: 4rem 0; color: #cbd5e1; letter-spacing: 10px; font-size: 18px; }
-
                 @media (max-width: 640px) {
-                    .content-title { font-size: 28px; }
-                    .reading-container { padding: 0 1.25rem; margin: 2rem auto; }
-                    .meta-box { flex-wrap: wrap; gap: 0.75rem; font-size: 13px; }
-                    .article-img-refined, .caption-refined { max-width: 90%; }
+                    .article-main-title { font-size: 2rem; }
+                    .article-content-container { padding: 2rem 1.25rem; }
+                    .article-img-refined { max-width: 100%; }
                 }
             `}</style>
         </div>
