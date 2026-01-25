@@ -157,7 +157,7 @@ export default function ArticleSection({ productName }) {
                           <button
                             className="btn-action-icon"
                             title="Lihat"
-                            onClick={() => window.open(`/article/${article.id}`, '_blank')}
+                            onClick={() => window.open(`/article/${article.slug}`, '_blank')}
                           >
                             <Eye size={18} />
                           </button>

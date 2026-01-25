@@ -1,5 +1,6 @@
 import React from "react";
 import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 import ArticleClient from "./ArticleClient";
 import { getBackendUrl } from "@/config/api";
 
@@ -7,14 +8,10 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 /**
- * 🥇 PURE PUBLIC FETCH - Tanpa Token, Persis Postman
- * Menghindari backend masuk ke mode private yang memblokir draft publik
+ * 🥇 PURE PUBLIC FETCH - Tanpa Token
  */
 async function getArticle(slug) {
-    if (!slug) {
-        console.error("[ARTICLE] slug from params is UNDEFINED!");
-        return null;
-    }
+    if (!slug || slug === "undefined") return null;
 
     const fetchOptions = {
         headers: {
@@ -26,20 +23,14 @@ async function getArticle(slug) {
 
     try {
         const url = getBackendUrl(`post/slug/${slug}`);
-        console.log("[ARTICLE] Fetching URL:", url);
-
         const res = await fetch(url, fetchOptions);
 
         if (res.ok) {
             const json = await res.json();
-            if (json.success && json.data) {
-                console.log("[ARTICLE] Success on Public Fetch!");
-                return json.data;
-            }
+            if (json.success && json.data) return json.data;
         }
 
-        // Fallback jika slug tidak ketemu, coba ID
-        console.warn("[ARTICLE] Slug not found, trying ID fallback...");
+        // Fallback coba ID jika slug tidak ketemu
         const resId = await fetch(getBackendUrl(`post/${slug}`), fetchOptions);
         if (resId.ok) {
             const jsonId = await resId.json();
@@ -47,47 +38,46 @@ async function getArticle(slug) {
         }
 
     } catch (err) {
-        console.error("[ARTICLE] Critical Error Fetching:", err);
+        console.error("[ARTICLE] Fetch Error:", err);
     }
     return null;
 }
 
+// ✅ SOLUSI 2 — JANGAN FETCH DI generateMetadata UNTUK DRAFT (SAFE APPROACH)
 export async function generateMetadata({ params }) {
-    // 🥈 Perbaiki params: SESUAI SARAN, JANGAN PAKE AWAIT
-    const { slug } = params;
-    const data = await getArticle(slug);
+    const { slug } = await params;
 
-    if (!data) return { title: "Article Not Found" };
+    if (!slug || slug === "undefined") {
+        return { title: "Article" };
+    }
 
     return {
-        title: `${data.title} | Ternak Properti`,
-        description: data.meta_description || data.title,
+        title: "Article | Ternak Properti",
     };
 }
 
+// ✅ SOLUSI 1 — HARD GUARD DI LEVEL PAGE (WAJIB)
 export default async function PublicArticlePage({ params }) {
     headers(); // Force Dynamic
 
-    // 🥈 Perbaiki params: SESUAI SARAN, JANGAN PAKE AWAIT
-    const { slug } = params;
-    console.log("[ARTICLE] Render Page for Slug:", slug);
+    const { slug } = await params;
 
+    if (!slug || slug === "undefined") {
+        console.error("[ARTICLE] Slug missing from route");
+        notFound(); // ⬅️ WAJIB
+    }
+
+    console.log("[ARTICLE] Rendering content for slug:", slug);
     const data = await getArticle(slug);
 
     if (!data) {
+        console.error("[ARTICLE] Content not found for slug:", slug);
         return (
             <div className="flex items-center justify-center min-h-screen bg-white">
                 <div className="text-center p-8 max-w-md">
-                    <div className="mb-4 text-red-500">
-                        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                    </div>
+                    <div className="mb-4 text-red-500 text-6xl">⚠️</div>
                     <h1 className="text-2xl font-bold text-gray-800">Artikel Tidak Ditemukan</h1>
                     <p className="text-gray-500 mt-2">Server tidak dapat menemukan konten untuk alamat ini.</p>
-                    <div className="mt-4 p-3 bg-gray-50 rounded text-xs font-mono text-gray-400">
-                        Slug: {String(slug)}
-                    </div>
                     <a href="/sales/bonus" className="mt-6 inline-block w-full py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition">
                         Kembali ke Dashboard
                     </a>
