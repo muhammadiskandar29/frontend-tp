@@ -49,8 +49,9 @@ const ArticleRenderer = ({ data }) => {
             case 'blockquote': return <blockquote key={index}>{children}</blockquote>;
             case 'image':
                 return (
-                    <figure key={index} style={{ textAlign: node.attrs?.textAlign }}>
-                        <img src={node.attrs.src} alt={node.attrs.alt} className="max-w-full rounded-lg shadow-sm" />
+                    <figure key={index} className="article-figure" style={{ textAlign: node.attrs?.textAlign || 'center' }}>
+                        <img src={node.attrs.src} alt={node.attrs.alt} className="article-img-refined" />
+                        {node.attrs.title && <figcaption className="caption-refined">{node.attrs.title}</figcaption>}
                     </figure>
                 );
             case 'horizontalRule': return <hr key={index} className="prose-hr" />;
@@ -113,9 +114,13 @@ const ArticleRenderer = ({ data }) => {
                             );
                         case "image":
                             return (
-                                <figure key={index} className="rendered-figure">
-                                    <img src={block.data.file?.url || "/placeholder.jpg"} alt={block.data.caption} />
-                                    {block.data.caption && <figcaption>{block.data.caption}</figcaption>}
+                                <figure key={index} className="article-figure" style={{ textAlign: 'center' }}>
+                                    <img
+                                        src={block.data.file?.url || "/placeholder.jpg"}
+                                        alt={block.data.caption}
+                                        className="article-img-refined"
+                                    />
+                                    {block.data.caption && <figcaption className="caption-refined">{block.data.caption}</figcaption>}
                                 </figure>
                             );
                         case "quote":
@@ -337,46 +342,86 @@ export default function ArticleClient({ article }) {
                 .meta-sep { width: 4px; height: 4px; border-radius: 50%; background: #cbd5e1; }
                 .meta-date, .meta-timer { display: flex; align-items: center; gap: 6px; }
 
-                /* Prose Typography */
-                .prose-body { line-height: 1.9; color: #334155; font-size: 1.15rem; }
-                .prose-body :global(h2) { font-size: 30px; font-weight: 800; color: #1e293b; margin: 3.5rem 0 1.5rem 0; letter-spacing: -0.02em; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem; }
-                .prose-body :global(p) { margin-bottom: 2rem; }
-                .prose-body :global(blockquote) { margin: 3rem 0; padding: 2.5rem; background: #f8fafc; border-radius: 20px; border-left: 6px solid #3b82f6; position: relative; font-style: italic; }
-                .quote-icon { font-size: 80px; color: #dbeafe; position: absolute; top: -10px; left: 15px; opacity: 0.5; font-family: 'Georgia', serif; }
+                /* Prose Typography Refined */
+                .prose-body { 
+                    line-height: 1.8; 
+                    color: #2d3748; 
+                    font-size: 1.125rem; 
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                }
+                .prose-body :global(h2) { 
+                    font-size: 1.875rem; 
+                    font-weight: 700; 
+                    color: #1a202c; 
+                    margin: 3rem 0 1.25rem 0; 
+                    line-height: 1.3;
+                }
+                .prose-body :global(p), .prose-body :global(.rendered-p), .prose-body :global(.tiptap-p) { 
+                    margin-bottom: 1.5rem; 
+                }
+                
+                /* Refined Image Handling */
+                .article-figure {
+                    margin: 2.5rem 0;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                }
+                .article-img-refined {
+                    max-width: 70%;
+                    height: auto;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+                    border: 1px solid #edf2f7;
+                }
+                .caption-refined {
+                    margin-top: 0.75rem;
+                    font-size: 0.875rem;
+                    color: #718096;
+                    font-style: italic;
+                    max-width: 70%;
+                    text-align: center;
+                }
 
-                .table-wrapper { overflow-x: auto; margin: 3rem 0; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+                .prose-body :global(blockquote) { 
+                    margin: 2.5rem 0; 
+                    padding: 1.5rem 2rem; 
+                    background: #f7fafc; 
+                    border-radius: 12px; 
+                    border-left: 4px solid #4a5568; 
+                    font-style: italic;
+                    color: #4a5568;
+                }
+
+                .table-wrapper { overflow-x: auto; margin: 2.5rem 0; border: 1px solid #e2e8f0; border-radius: 12px; }
                 .rendered-table { width: 100%; border-collapse: collapse; }
-                .rendered-table th { background: #f8fafc; padding: 16px 20px; font-size: 13px; font-weight: 800; color: #475569; text-align: left; border-bottom: 1px solid #e2e8f0; text-transform: uppercase; }
-                .rendered-table td { padding: 16px 20px; font-size: 15px; border-bottom: 1px solid #f1f5f9; }
+                .rendered-table th { background: #f7fafc; padding: 12px 16px; font-size: 0.75rem; font-weight: 700; color: #4a5568; text-align: left; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; }
+                .rendered-table td { padding: 12px 16px; font-size: 0.9375rem; border-bottom: 1px solid #edf2f7; }
 
-                .rendered-checklist { margin: 2rem 0; display: flex; flex-direction: column; gap: 10px; }
-                .checklist-item { display: flex; align-items: flex-start; gap: 1rem; padding: 1.25rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; transition: 0.2s; }
-                .checklist-item.checked { background: #f0fdf4; border-color: #bbf7d0; }
-                .checklist-item.checked span { color: #166534; text-decoration: line-through; opacity: 0.7; }
-                .custom-checkbox { width: 22px; height: 22px; border-radius: 6px; border: 2px solid #cbd5e1; background: #fff; display: flex; align-items: center; justify-content: center; color: #16a34a; flex-shrink: 0; margin-top: 2px; }
-                .checked .custom-checkbox { border-color: #16a34a; background: #dcfce7; }
+                .rendered-checklist { margin: 1.5rem 0; display: flex; flex-direction: column; gap: 8px; }
+                .checklist-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; }
+                .checklist-item.checked { background: #f0fff4; border-color: #c6f6d5; }
+                .custom-checkbox { width: 18px; height: 18px; border-radius: 4px; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+                .checked .custom-checkbox { border-color: #48bb78; background: #f0fff4; color: #48bb78; }
 
-                .rendered-divider { display: flex; justify-content: center; margin: 5rem 0; color: #e2e8f0; letter-spacing: 12px; font-size: 20px; }
+                .rendered-divider { display: flex; justify-content: center; margin: 4rem 0; color: #cbd5e1; letter-spacing: 10px; font-size: 18px; }
 
                 /* Footer Navigation */
-                .reading-footer { margin-top: 8rem; position: relative; padding-bottom: 4rem; }
-                .footer-gradient { height: 150px; background: linear-gradient(to top, #f8fafc, transparent); position: absolute; bottom: 100%; left: 0; right: 0; pointer-events: none; }
-                .footer-navigation { display: flex; justify-content: space-between; gap: 1.5rem; }
-                .btn-nav { display: flex; align-items: center; gap: 12px; padding: 14px 28px; border-radius: 14px; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.2s; }
-                .btn-nav.prev { background: #fff; border: 1px solid #e2e8f0; color: #64748b; }
-                .btn-nav.next { background: #1e293b; color: #fff; border: none; }
-                .btn-nav:hover:not(.disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-                .btn-nav.next:hover { background: #000; }
+                .reading-footer { margin-top: 6rem; padding-bottom: 4rem; border-top: 1px solid #edf2f7; padding-top: 3rem; }
+                .btn-nav { display: flex; align-items: center; gap: 10px; padding: 12px 24px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: 0.2s; }
+                .btn-nav.prev { background: #fff; border: 1px solid #e2e8f0; color: #4a5568; }
+                .btn-nav.next { background: #2d3748; color: #fff; border: none; }
+                .btn-nav:hover:not(.disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
                 .disabled { opacity: 0.5; cursor: not-allowed; }
 
                 @media (max-width: 1100px) {
                     .curriculum-sidebar { display: none; }
                 }
                 @media (max-width: 640px) {
-                    .content-title { font-size: 32px; }
-                    .reading-container { padding: 0 1.25rem; }
-                    .meta-box { flex-wrap: wrap; gap: 0.75rem; }
-                    .meta-sep { display: none; }
+                    .content-title { font-size: 28px; }
+                    .reading-container { padding: 0 1.25rem; margin: 2rem auto; }
+                    .meta-box { flex-wrap: wrap; gap: 0.75rem; font-size: 13px; }
+                    .article-img-refined, .caption-refined { max-width: 100%; }
                 }
             `}</style>
         </div>
