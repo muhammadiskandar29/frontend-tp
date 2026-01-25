@@ -1,5 +1,5 @@
 import React from "react";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import ArticleClient from "./ArticleClient";
 import { getBackendUrl } from "@/config/api";
@@ -11,24 +11,38 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 /**
- * 🥇 ARTICLE FETCH
+ * 🥇 ARTICLE FETCH - Dengan Dukungan Token Bearer
  */
-async function getArticle(slug) {
+async function getArticle(slug, token = null) {
     if (!slug) return null;
+
+    const headersList = {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    };
+
+    if (token) {
+        headersList["Authorization"] = `Bearer ${token}`;
+    }
+
     const url = getBackendUrl(`post/slug/${slug}`);
-    LOG("Fetching article from URL:", url);
+    LOG("Fetching article with token from URL:", url);
 
     try {
-        const res = await fetch(url, { cache: "no-store" });
+        const res = await fetch(url, {
+            headers: headersList,
+            cache: "no-store"
+        });
 
-        // 🧪 DEBUG: Ambil raw response untuk investigasi format backend
         const rawText = await res.text();
-        LOG("Backend raw response:", rawText);
+        LOG("Backend raw response status:", res.status);
 
         if (!res.ok) {
-            LOG("Slug fetch failed, status:", res.status);
-            // Fallback trial by ID
-            const resId = await fetch(getBackendUrl(`post/${slug}`), { cache: "no-store" });
+            LOG("Slug fetch failed, trying ID fallback...");
+            const resId = await fetch(getBackendUrl(`post/${slug}`), {
+                headers: headersList,
+                cache: "no-store"
+            });
             if (!resId.ok) return null;
             const jsonId = await resId.json();
             return jsonId?.data ?? null;
@@ -60,6 +74,10 @@ export function generateMetadata({ params }) {
 export default async function PublicArticlePage({ params }) {
     headers(); // force dynamic
 
+    // Ambil token dari cookies
+    const cookieStore = cookies();
+    const token = cookieStore.get("token")?.value;
+
     // Pakai plain params sesuai saran
     const { slug } = params || {};
 
@@ -68,8 +86,8 @@ export default async function PublicArticlePage({ params }) {
         notFound();
     }
 
-    LOG("Processing article for slug:", slug);
-    const data = await getArticle(slug);
+    LOG("Processing article with auth for slug:", slug);
+    const data = await getArticle(slug, token);
 
     if (!data) {
         LOG("Article data not found in backend for slug:", slug);
