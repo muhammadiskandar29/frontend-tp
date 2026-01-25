@@ -11,37 +11,27 @@ export const revalidate = 0;
  * 🥇 PURE PUBLIC FETCH - Tanpa Token
  */
 async function getArticle(slug) {
-    if (!slug) return null;
+    LOG("Start fetching article:", slug);
 
-    const fetchOptions = {
-        headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json"
-        },
-        cache: 'no-store'
-    };
+    const url = getBackendUrl(`post/slug/${slug}`);
+    LOG("Request URL:", url);
 
-    try {
-        const url = getBackendUrl(`post/slug/${slug}`);
-        const res = await fetch(url, fetchOptions);
+    const res = await fetch(url, { cache: "no-store" });
 
-        if (res.ok) {
-            const json = await res.json();
-            if (json.success && json.data) return json.data;
-        }
+    LOG("Response status:", res.status);
 
-        // Fallback coba ID jika slug tidak ketemu
-        const resId = await fetch(getBackendUrl(`post/${slug}`), fetchOptions);
-        if (resId.ok) {
-            const jsonId = await resId.json();
-            if (jsonId.success) return jsonId.data;
-        }
-
-    } catch (err) {
-        console.error("[ARTICLE] Fetch Error:", err);
+    if (!res.ok) {
+        const raw = await res.text();
+        ERR("Fetch failed raw:", raw);
+        return null;
     }
-    return null;
+
+    const json = await res.json();
+    LOG("Response JSON:", json);
+
+    return json?.data ?? null;
 }
+
 
 // ✅ SOLUSI 2 — JANGAN FETCH DI generateMetadata (TANPA AWAIT)
 export async function generateMetadata({ params }) {
