@@ -11,7 +11,7 @@ export const revalidate = 0;
  * 🥇 PURE PUBLIC FETCH - Tanpa Token
  */
 async function getArticle(slug) {
-    if (!slug || slug === "undefined") return null;
+    if (!slug) return null;
 
     const fetchOptions = {
         headers: {
@@ -43,11 +43,11 @@ async function getArticle(slug) {
     return null;
 }
 
-// ✅ SOLUSI 2 — JANGAN FETCH DI generateMetadata UNTUK DRAFT (SAFE APPROACH)
+// ✅ SOLUSI 2 — JANGAN FETCH DI generateMetadata (TANPA AWAIT)
 export async function generateMetadata({ params }) {
-    const { slug } = await params;
+    const { slug } = params;
 
-    if (!slug || slug === "undefined") {
+    if (!slug) {
         return { title: "Article" };
     }
 
@@ -56,13 +56,13 @@ export async function generateMetadata({ params }) {
     };
 }
 
-// ✅ SOLUSI 1 — HARD GUARD DI LEVEL PAGE (WAJIB)
+// ✅ SOLUSI 1 — HARD GUARD DI LEVEL PAGE (TANPA AWAIT)
 export default async function PublicArticlePage({ params }) {
     headers(); // Force Dynamic
 
-    const { slug } = await params;
+    const { slug } = params;
 
-    if (!slug || slug === "undefined") {
+    if (!slug) {
         console.error("[ARTICLE] Slug missing from route");
         notFound(); // ⬅️ WAJIB
     }
