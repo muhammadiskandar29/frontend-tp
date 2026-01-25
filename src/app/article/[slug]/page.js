@@ -12,79 +12,60 @@ export const revalidate = 0;
 async function getArticle(slug) {
     if (!slug) return null;
 
-    // List of potential endpoints to try for maximum compatibility
-    const endpoints = [
-        `post/slug/${slug}`,
-        `post/${slug}`,
-    ];
+    // Pastikan slug bersih dari karakter aneh URL (seperti tanda strip atau spasi ter-encode)
+    const cleanSlug = decodeURIComponent(slug);
 
-    for (const endpoint of endpoints) {
-        try {
-            const url = getBackendUrl(endpoint);
+    try {
+        const url = getBackendUrl(`post/slug/${cleanSlug}`);
+        const res = await fetch(url, {
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            },
+            cache: 'no-store'
+        });
 
-            const res = await fetch(url, {
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                },
-                cache: 'no-store'
-            });
-
-            if (res.ok) {
-                const json = await res.json();
-                if (json.success && json.data) {
-                    return {
-                        title: json.data.title,
-                        author: json.data.author || "Ternak Properti Team",
-                        date: json.data.create_at || "Just now",
-                        content: json.data.content,
-                        meta_description: json.data.meta_description || json.data.title
-                    };
-                }
-            }
-        } catch (err) {
-            console.error(`[SERVER ARTICLE] Failed to fetch from ${endpoint}:`, err);
+        if (!res.ok) {
+            // Coba fallback jika slug gagal, mungkin ID?
+            const fallbackUrl = getBackendUrl(`post/${cleanSlug}`);
+            const fallbackRes = await fetch(fallbackUrl, { cache: 'no-store' });
+            if (!fallbackRes.ok) return null;
+            const fallbackJson = await fallbackRes.json();
+            return (fallbackJson.success && fallbackJson.data) ? fallbackJson.data : null;
         }
-    }
 
-    return null;
+        const json = await res.json();
+        return (json.success && json.data) ? json.data : null;
+    } catch (err) {
+        console.error("[SERVER ARTICLE] Error fetching article:", err);
+        return null;
+    }
 }
 
 export async function generateMetadata({ params }) {
-    const resolvedParams = await params;
-    const slug = resolvedParams?.slug;
+    const { slug } = await params;
+    const data = await getArticle(slug);
 
-    if (!slug) return { title: "Article Not Found" };
-
-    const article = await getArticle(slug);
-
-    if (!article) {
-        return {
-            title: "Article Not Found | Ternak Properti",
-        };
-    }
+    if (!data) return { title: "Article Not Found | Ternak Properti" };
 
     return {
-        title: `${article.title} | Ternak Properti`,
-        description: article.meta_description,
+        title: `${data.title} | Ternak Properti`,
+        description: data.meta_description || data.title,
         openGraph: {
-            title: article.title,
-            description: article.meta_description,
+            title: data.title,
+            description: data.meta_description || data.title,
             type: 'article',
         }
     };
 }
 
 export default async function PublicArticlePage({ params }) {
-    // Force dynamic rendering
-    headers();
+    headers(); // Matikan browser cache (rely on next.config.js as well)
 
-    const resolvedParams = await params;
-    const slug = resolvedParams?.slug;
+    const { slug } = await params;
+    const data = await getArticle(slug);
 
-    const article = await getArticle(slug);
-
-    if (!article) {
+    if (!data) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-slate-50">
                 <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-slate-100 max-w-md">
@@ -92,17 +73,26 @@ export default async function PublicArticlePage({ params }) {
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
                     </div>
                     <p className="text-xl font-bold text-slate-800 mb-2">Artikel Tidak Ditemukan</p>
-                    <p className="text-slate-500 mb-6">Maaf, artikel yang Anda cari tidak tersedia atau sudah tidak aktif.</p>
+                    <p className="text-slate-500 mb-2">Maaf, kami tidak bisa menemukan artikel dengan alamat tersebut.</p>
+                    <p className="text-xs text-slate-400 font-mono mb-6">Slug: {decodeURIComponent(slug)}</p>
                     <a
-                        href={`/article/${slug}`}
-                        className="inline-block px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition"
+                        href="/sales/bonus"
+                        className="inline-block px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition font-bold"
                     >
-                        Coba Lagi
+                        Kembali ke Dashboard
                     </a>
                 </div>
             </div>
         );
     }
 
-    return <ArticleClient article={article} />;
+    // Map data ke format yang diharapkan ArticleClient agar konsisten
+    const formattedArticle = {
+        title: data.title,
+        author: data.author || "Ternak Properti Team",
+        date: data.create_at || "Baru saja",
+        content: data.content
+    };
+
+    return <ArticleClient article={formattedArticle} />;
 }
