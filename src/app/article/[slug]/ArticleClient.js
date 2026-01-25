@@ -207,7 +207,7 @@ export default function ArticleClient({ article }) {
                     align-items: center;
                     padding: 0 1.5rem;
                 }
-                .intercom-logo { height: 32px; width: auto; cursor: pointer; }
+                .intercom-logo { height: 40px; width: auto; cursor: pointer; }
                 .intercom-nav-right { display: flex; align-items: center; gap: 1.5rem; }
                 .intercom-search-box {
                     display: flex;
@@ -313,15 +313,16 @@ export default function ArticleClient({ article }) {
                 :global(.intercom-list-ordered) { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1.5rem; }
                 :global(.intercom-li) { margin-bottom: 0.5rem; }
                 
-                :global(.intercom-figure) { margin: 2.5rem 0; text-align: center; }
+                :global(.intercom-figure) { margin: 2.5rem 0; text-align: center; display: flex; flex-direction: column; align-items: center; }
                 :global(.intercom-img) {
-                    max-width: 100%;
+                    max-width: 320px;
+                    width: 100%;
                     height: auto;
                     border-radius: 8px;
                     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
                     border: 1px solid #E5E7EB;
                 }
-                :global(.intercom-caption) { margin-top: 0.75rem; font-size: 14px; color: #6B7280; font-style: italic; }
+                :global(.intercom-caption) { margin-top: 0.75rem; font-size: 14px; color: #6B7280; font-style: italic; max-width: 320px; }
 
                 /* FEEDBACK */
                 .intercom-feedback {

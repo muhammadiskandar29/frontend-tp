@@ -62,10 +62,15 @@ async function getArticle(slug, token = null) {
 export async function generateMetadata({ params }) {
     const awaitedParams = await params;
     const { slug } = awaitedParams || {};
+
+    // Kita bisa fetch article di sini untuk dapet title asli
+    const data = await getArticle(slug);
+
     return {
-        title: slug
-            ? `${slug} | Ternak Properti`
-            : "Article | Ternak Properti",
+        title: data?.title
+            ? `${data.title} | Ternak Properti`
+            : (slug ? `${slug} | Ternak Properti` : "Article | Ternak Properti"),
+        description: data?.subtitle || "Knowledge base and support articles for Ternak Properti.",
     };
 }
 

@@ -20,6 +20,9 @@ export default function ArticleSection({ productName }) {
   const [loading, setLoading] = useState(false);
   const [currentArticle, setCurrentArticle] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [initialSelectedIds, setInitialSelectedIds] = useState([]);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const fetchArticles = async () => {
     setLoading(true);
@@ -27,18 +30,27 @@ export default function ArticleSection({ productName }) {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
 
-      // ✅ Fetch data nyata dari backend
-      const response = await axios.get(`/api/sales/post`, { headers });
+      // 1. Fetch ALL articles
+      const allRes = await axios.get(`/api/sales/post`, { headers });
+      if (allRes.data?.success) {
+        setArticles(allRes.data.data || []);
+      }
 
-      if (response.data?.success) {
-        setArticles(response.data.data || []);
-      } else {
-        // Jika belum ada data atau gagal, tampilkan list kosong
-        setArticles([]);
+      // 2. Fetch articles LINKED to this product
+      try {
+        const linkedRes = await axios.get(`/api/sales/produk/${productId}/post`, { headers });
+        if (linkedRes.data?.success) {
+          // Assuming the backend returns objects with ids or just ids
+          const linkedData = linkedRes.data.data || [];
+          const ids = linkedData.map(item => item.id || item);
+          setSelectedIds(ids);
+          setInitialSelectedIds(ids);
+        }
+      } catch (err) {
+        console.warn("Fetch linked articles failed, might not be implemented yet:", err);
       }
     } catch (err) {
       console.error("Fetch articles error:", err);
-      // Jika 404 atau error lain, set empty list
       setArticles([]);
     } finally {
       setLoading(false);
@@ -82,6 +94,37 @@ export default function ArticleSection({ productName }) {
     fetchArticles();
   };
 
+  const handleToggleSelection = (id) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleUpdateRelation = async () => {
+    setIsSyncing(true);
+    try {
+      const token = localStorage.getItem("token");
+      const headers = { Authorization: `Bearer ${token}` };
+      const payload = { post: selectedIds };
+
+      const response = await axios.put(`/api/sales/produk/${productId}/post`, payload, { headers });
+
+      if (response.data?.success) {
+        toast.success("Relasi artikel berhasil diperbarui");
+        setInitialSelectedIds([...selectedIds]);
+      } else {
+        toast.error(response.data?.message || "Gagal memperbarui relasi");
+      }
+    } catch (err) {
+      console.error("Update relation error:", err);
+      toast.error("Gagal menyambung ke server untuk update relasi");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const hasChanges = JSON.stringify(selectedIds.sort()) !== JSON.stringify(initialSelectedIds.sort());
+
   const filteredArticles = articles.filter(a =>
     (a.title || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -96,9 +139,21 @@ export default function ArticleSection({ productName }) {
               <span className="card-subtitle">DIRECTORY</span>
               <h2 className="card-title">Artikel Produk</h2>
             </div>
-            <button className="btn-primary-orange" onClick={handleCreate}>
-              + Tambah Artikel
-            </button>
+            <div className="header-actions">
+              {hasChanges && (
+                <button
+                  className="btn-sync-relation"
+                  onClick={handleUpdateRelation}
+                  disabled={isSyncing}
+                >
+                  <Save size={16} />
+                  {isSyncing ? "Menyimpan..." : "Simpan Relasi"}
+                </button>
+              )}
+              <button className="btn-primary-orange" onClick={handleCreate}>
+                + Tambah Artikel
+              </button>
+            </div>
           </div>
 
           {/* Search Bar Premium */}
@@ -131,7 +186,19 @@ export default function ArticleSection({ productName }) {
               <table className="bonus-table-clean">
                 <thead>
                   <tr>
-                    <th className="w-10">#</th>
+                    <th className="w-10">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.length === filteredArticles.length && filteredArticles.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedIds(filteredArticles.map(a => a.id));
+                          } else {
+                            setSelectedIds([]);
+                          }
+                        }}
+                      />
+                    </th>
                     <th>JUDUL ARTIKEL</th>
                     <th>STATUS</th>
                     <th className="text-right">AKSI</th>
@@ -139,8 +206,14 @@ export default function ArticleSection({ productName }) {
                 </thead>
                 <tbody>
                   {filteredArticles.map((article, index) => (
-                    <tr key={article.id}>
-                      <td className="row-num">{index + 1}</td>
+                    <tr key={article.id} className={selectedIds.includes(article.id) ? 'selected-row' : ''}>
+                      <td className="row-num">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(article.id)}
+                          onChange={() => handleToggleSelection(article.id)}
+                        />
+                      </td>
                       <td>
                         <div className="article-info-clean">
                           <span className="article-name">{article.title}</span>
@@ -248,6 +321,35 @@ export default function ArticleSection({ productName }) {
             box-shadow: 0 4px 12px rgba(255, 122, 0, 0.2);
         }
 
+        .btn-sync-relation {
+            background: #fff;
+            color: #ff7a00;
+            border: 1px solid #ff7a00;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 12px;
+        }
+        .btn-sync-relation:hover {
+            background: #fff7ed;
+            box-shadow: 0 4px 12px rgba(255, 122, 0, 0.1);
+        }
+        .btn-sync-relation:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+        }
+
         .search-container-premium {
             padding: 0 30px 24px 30px;
         }
@@ -315,7 +417,14 @@ export default function ArticleSection({ productName }) {
         .bonus-table-clean tr:hover td {
             background: #fafafa;
         }
-        .row-num { font-weight: 500; color: #94a3b8; font-size: 13px; }
+        .bonus-table-clean tr.selected-row td {
+            background: #fffcf0;
+        }
+        .row-num { font-weight: 500; color: #94a3b8; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+        .row-num input[type="checkbox"] {
+            cursor: pointer;
+            accent-color: #ff7a00;
+        }
         .article-name { font-weight: 600; color: #1e293b; display: block; font-size: 14px; }
         .article-slug-clean { font-size: 11px; color: #cbd5e1; }
 
