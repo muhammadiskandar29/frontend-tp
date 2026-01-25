@@ -43,37 +43,41 @@ export function generateMetadata({ params }) {
     return { title: "Article | Ternak Properti" };
 }
 
-// ✅ SOLUSI 1 — DIAGNOSTIC PAGE
+// ✅ Server Component
 export default async function PublicArticlePage({ params }) {
     headers(); // force dynamic
 
-    // FAKTA: params adalah plain object di App Router Page
-    const { slug } = params;
+    // Debugging: Lihat apa yang benar-benar dikirim oleh Next.js
+    LOG("RAW PARAMS:", JSON.stringify(params));
 
-    LOG("DEBUG PARAMS:", JSON.stringify(params));
+    // Ambil dari id_article (sesuai nama folder baru) atau slug (fallback)
+    const slug = params?.id_article || params?.slug;
 
     if (!slug) {
-        LOG("Slug missing from route - rendering diagnostic view");
+        LOG("Slug/ID missing from params - rendering diagnostic view");
         return (
             <div style={{ padding: '20px', fontFamily: 'monospace' }}>
-                <h1>Diagnostic: Slug Missing</h1>
+                <h1>Diagnostic: Article Identifier Missing</h1>
                 <p>Params detected by Next.js:</p>
                 <pre>{JSON.stringify(params, null, 2)}</pre>
+                <div style={{ marginTop: '20px', fontSize: '12px' }}>
+                    Keys found: {Object.keys(params || {}).join(', ') || 'NONE'}
+                </div>
             </div>
         );
     }
 
-    LOG("Rendering content for slug:", slug);
+    LOG("Rendering content for resolved identifier:", slug);
     const data = await getArticle(slug);
 
     if (!data) {
-        ERR("Data null for slug:", slug);
+        ERR("Data null for identifier:", slug);
         return (
             <div className="flex items-center justify-center min-h-screen bg-white">
                 <div className="text-center p-8 max-w-md">
                     <div className="mb-4 text-red-500 text-6xl">⚠️</div>
                     <h1 className="text-2xl font-bold text-gray-800">Artikel Tidak Ditemukan</h1>
-                    <p className="text-gray-500 mt-2">Server tidak dapat menemukan konten untuk slug: <strong>{slug}</strong></p>
+                    <p className="text-gray-500 mt-2">Server tidak dapat menemukan konten untuk: <strong>{slug}</strong></p>
                     <pre style={{ fontSize: '10px', marginTop: '20px', textAlign: 'left', background: '#f4f4f4', padding: '10px' }}>
                         Debug: {JSON.stringify(params, null, 2)}
                     </pre>
