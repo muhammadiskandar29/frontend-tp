@@ -14,23 +14,20 @@ async function getArticle(slug) {
 
     // List of potential endpoints to try for maximum compatibility
     const endpoints = [
-        `post/slug/${slug}`,  // Default slug endpoint
-        `post/${slug}`,       // Potential ID or fallback endpoint
+        `post/slug/${slug}`,
+        `post/${slug}`,
     ];
 
     for (const endpoint of endpoints) {
         try {
             const url = getBackendUrl(endpoint);
-            console.log(`[SERVER ARTICLE] Trying fetch: ${url}`);
 
             const res = await fetch(url, {
                 headers: {
                     "Content-Type": "application/json",
                     "Accept": "application/json",
                 },
-                cache: 'no-store',
-                // Adding a timeout to avoid hanging server-side
-                signal: AbortSignal.timeout(10000)
+                cache: 'no-store'
             });
 
             if (res.ok) {
@@ -45,7 +42,6 @@ async function getArticle(slug) {
                     };
                 }
             }
-            console.warn(`[SERVER ARTICLE] Endpoint ${endpoint} returned status: ${res.status}`);
         } catch (err) {
             console.error(`[SERVER ARTICLE] Failed to fetch from ${endpoint}:`, err);
         }
@@ -80,6 +76,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function PublicArticlePage({ params }) {
+    // Force dynamic rendering
     headers();
 
     const resolvedParams = await params;
@@ -96,12 +93,12 @@ export default async function PublicArticlePage({ params }) {
                     </div>
                     <p className="text-xl font-bold text-slate-800 mb-2">Artikel Tidak Ditemukan</p>
                     <p className="text-slate-500 mb-6">Maaf, artikel yang Anda cari tidak tersedia atau sudah tidak aktif.</p>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition"
+                    <a
+                        href={`/article/${slug}`}
+                        className="inline-block px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition"
                     >
                         Coba Lagi
-                    </button>
+                    </a>
                 </div>
             </div>
         );
