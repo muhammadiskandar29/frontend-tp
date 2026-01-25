@@ -1,5 +1,5 @@
 import React from "react";
-import { headers, cookies } from "next/headers";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import ArticleClient from "./ArticleClient";
 import { getBackendUrl } from "@/config/api";
@@ -10,20 +10,14 @@ export const revalidate = 0;
 /**
  * 🥇 PURE PUBLIC FETCH - Tanpa Token
  */
-async function getArticle(slug, token = null) {
+async function getArticle(slug) {
     if (!slug) return null;
 
-    const headersList = {
-        "Accept": "application/json",
-        "Content-Type": "application/json"
-    };
-
-    if (token) {
-        headersList["Authorization"] = `Bearer ${token}`;
-    }
-
     const fetchOptions = {
-        headers: headersList,
+        headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        },
         cache: 'no-store'
     };
 
@@ -73,10 +67,8 @@ export default async function PublicArticlePage({ params }) {
         notFound(); // ⬅️ WAJIB
     }
 
-    console.log("[ARTICLE] Rendering content with token for slug:", slug);
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const data = await getArticle(slug, token);
+    console.log("[ARTICLE] Rendering content for slug:", slug);
+    const data = await getArticle(slug);
 
     if (!data) {
         console.error("[ARTICLE] Content not found for slug:", slug);
