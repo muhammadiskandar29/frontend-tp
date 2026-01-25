@@ -12,39 +12,45 @@ export const revalidate = 0;
 
 /**
  * 🥇 ARTICLE FETCH
- * Fetching as a public guest (no token) to ensure draft/public access.
  */
 async function getArticle(slug) {
     if (!slug) return null;
     const url = getBackendUrl(`post/slug/${slug}`);
+    LOG("Fetching article from URL:", url);
 
     try {
         const res = await fetch(url, { cache: "no-store" });
+
+        // 🧪 DEBUG: Ambil raw response untuk investigasi format backend
+        const rawText = await res.text();
+        LOG("Backend raw response:", rawText);
+
         if (!res.ok) {
-            // Fallback: try fetching by ID if slug fails
+            LOG("Slug fetch failed, status:", res.status);
+            // Fallback trial by ID
             const resId = await fetch(getBackendUrl(`post/${slug}`), { cache: "no-store" });
             if (!resId.ok) return null;
             const jsonId = await resId.json();
             return jsonId?.data ?? null;
         }
-        const json = await res.json();
+
+        const json = JSON.parse(rawText);
         return json?.data ?? null;
     } catch (e) {
-        ERR("Fetch error:", e);
+        ERR("Critical fetch error:", e);
         return null;
     }
 }
 
 /**
- * 🥈 METADATA
- * Next.js 15+ requires params to be awaited here too.
+ * 🥈 METADATA (Sync Approach for Debugging)
  */
-export async function generateMetadata({ params }) {
-    const { slug } = await params;
-    if (!slug) return { title: "Article | Ternak Properti" };
-
+export function generateMetadata({ params }) {
+    const { slug } = params || {};
     return {
-        title: "Article | Ternak Properti",
+        title: slug
+            ? `${slug} | Ternak Properti`
+            : "Article | Ternak Properti",
     };
 }
 
@@ -54,9 +60,8 @@ export async function generateMetadata({ params }) {
 export default async function PublicArticlePage({ params }) {
     headers(); // force dynamic
 
-    // 🔥 PENTING: Untuk Next.js 15+, params HARUS di-await.
-    const awaitedParams = await params;
-    const { slug } = awaitedParams;
+    // Pakai plain params sesuai saran
+    const { slug } = params || {};
 
     if (!slug) {
         LOG("Slug not found in route params");
@@ -68,25 +73,17 @@ export default async function PublicArticlePage({ params }) {
 
     if (!data) {
         LOG("Article data not found in backend for slug:", slug);
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-white">
-                <div className="text-center p-8 max-w-md">
-                    <div className="mb-4 text-red-500 text-6xl">⚠️</div>
-                    <h1 className="text-2xl font-bold text-gray-800">Artikel Tidak Ditemukan</h1>
-                    <p className="text-gray-500 mt-2">Server tidak dapat menemukan konten untuk slug: <strong>{slug}</strong></p>
-                    <a href="/sales/bonus" className="mt-8 inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition">
-                        Kembali ke Dashboard
-                    </a>
-                </div>
-            </div>
-        );
+        notFound(); // ⬅️ Hasil akhir jika data null
     }
 
-    // Success: Render the actual Article Client component
-    return <ArticleClient article={{
-        title: data.title,
-        author: data.author || "Ternak Properti Team",
-        date: data.create_at || "Just now",
-        content: data.content
-    }} />;
+    return (
+        <ArticleClient
+            article={{
+                title: data.title,
+                author: data.author || "Ternak Properti Team",
+                date: data.create_at || "Just now",
+                content: data.content,
+            }}
+        />
+    );
 }
