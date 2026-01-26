@@ -102,40 +102,57 @@ export default function Dashboard() {
         }
       }
 
-      const response = await axios.get(`${BASE_URL}/sales/dashboard`, {
-        params: { sales_id: currentUserId },
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Fetch from both endpoints for complete data
+      const [dashRes, statsRes] = await Promise.all([
+        axios.get(`${BASE_URL}/sales/dashboard`, {
+          params: { sales_id: currentUserId },
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${BASE_URL}/sales/statistics`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
 
-      // Handle both cases: response.data.data or just response.data
-      const json = response.data;
-      const data = json.data || (json.statistik ? json : null);
+      // 1. Process Statistics Data (Priority for Performance)
+      if (statsRes.data?.success && Array.isArray(statsRes.data.data?.statistics)) {
+        const statsList = statsRes.data.data.statistics;
+        const myStats = statsList.find(s => Number(s.sales_id) === Number(currentUserId));
 
-      if (json.success && data) {
-        setDashboardStats(data);
+        if (myStats) {
+          setMePerformance(myStats);
 
-        // Find me in performance array or use the user provided in response
-        const me = (data.sales_performance || []).find(s => Number(s.sales_id) === Number(currentUserId))
-          || (data.user && Number(data.user.id) === Number(currentUserId) ? data.sales_performance?.[0] : null);
+          // Update cards based on statistics data
+          setOrderStats(prev => ({
+            ...prev,
+            totalOrders: myStats.orders?.total || 0,
+            totalRevenue: myStats.revenue?.this_period || 0,
+            totalRevenueFormatted: myStats.revenue?.this_period_formatted || "Rp 0",
+            conversionRate: myStats.conversion_rates?.customer_to_order || 0,
+            conversionRateFormatted: myStats.conversion_rates?.customer_to_order_formatted || "0.00%",
+          }));
+        }
+      }
 
-        setMePerformance(me);
+      // 2. Process Dashboard Data (For Recent Orders, Logs, and Overview)
+      const dashJson = dashRes.data;
+      const dashData = dashJson.data || (dashJson.statistik ? dashJson : null);
 
-        // Update Order Stats with fallbacks
-        setOrderStats({
-          totalOrders: data.overview?.orders_total || me?.total_leads || 0,
-          totalRevenue: data.statistik?.total_penjualan_bulan_ini || data.financial?.gross_revenue || 0,
-          totalRevenueFormatted: data.statistik?.total_penjualan_bulan_ini_formatted
-            || data.financial?.gross_revenue_formatted
-            || formatCurrency(data.statistik?.total_penjualan_bulan_ini || 0),
-          prosesCount: data.overview?.orders_unpaid || 0,
-          paidCount: data.overview?.orders_paid || 0,
-          unpaidCount: data.overview?.orders_unpaid || 0,
-          conversionRate: data.overview?.paid_ratio || me?.conversion_rate || 0,
-          conversionRateFormatted: data.overview?.paid_ratio_formatted || me?.conversion_rate_formatted || "0.00%",
-        });
+      if (dashJson.success && dashData) {
+        setDashboardStats(dashData);
 
-        setRecentOrders(data.pembelian_terakhir || []);
-        setFollowUpHistory(data.riwayat_follow_up || []);
+        // Fill in missing cards that aren't in statistics (Unpaid, Pending, etc.)
+        setOrderStats(prev => ({
+          ...prev,
+          prosesCount: dashData.overview?.orders_unpaid || 0,
+          paidCount: dashData.overview?.orders_paid || 0,
+          unpaidCount: dashData.overview?.orders_unpaid || 0,
+          // Only overwrite if statistics didn't provide them
+          totalOrders: prev.totalOrders || dashData.overview?.orders_total || 0,
+          totalRevenueFormatted: prev.totalRevenueFormatted || dashData.statistik?.total_penjualan_bulan_ini_formatted || "Rp 0"
+        }));
+
+        setRecentOrders(dashData.pembelian_terakhir || []);
+        setFollowUpHistory(dashData.riwayat_follow_up || []);
       }
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
