@@ -138,8 +138,14 @@ body {
    ============================================ */
 .dashboard-summary-horizontal {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-6);
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 1400px) {
+  .dashboard-summary-horizontal {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 @media (max-width: 1024px) {
@@ -158,10 +164,10 @@ body {
   background: var(--dash-surface);
   border: 1px solid var(--dash-border);
   border-radius: var(--radius-lg);
-  padding: var(--space-6);
+  padding: var(--space-4);
   display: flex;
-  gap: var(--space-4);
-  align-items: flex-start;
+  gap: var(--space-3);
+  align-items: center;
   box-shadow: var(--shadow-card);
   transition: all var(--transition-base);
   position: relative;
@@ -192,8 +198,8 @@ body {
 
 /* Icon Container - Smaller, supporting role */
 .summary-card__icon {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: var(--radius-md);
   display: inline-flex;
   align-items: center;
@@ -206,30 +212,31 @@ body {
 }
 
 .summary-card__icon svg {
-  width: var(--icon-sm);
-  height: var(--icon-sm);
+  width: var(--icon-xs);
+  height: var(--icon-xs);
   color: #ffffff;
 }
 
 /* Typography - Value is the hero */
 .summary-card__label {
-  font-size: var(--text-xs);
+  font-size: 0.65rem;
   color: var(--dash-muted-light);
-  margin: 0 0 var(--space-3) 0;
-  font-weight: var(--font-medium);
+  margin: 0 0 2px 0;
+  font-weight: var(--font-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   line-height: var(--leading-tight);
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
 .summary-card__value {
-  font-size: 2rem;
+  font-size: 1.35rem;
   font-weight: var(--font-bold);
   color: var(--dash-text-dark);
   margin: 0;
   line-height: var(--leading-tight);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
 /* ============================================
@@ -632,7 +639,7 @@ body {
   }
 
   .summary-card__value {
-    font-size: 1.75rem;
+    font-size: 1.15rem;
   }
 }
 
