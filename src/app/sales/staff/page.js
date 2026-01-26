@@ -97,65 +97,66 @@ export default function Dashboard() {
         try {
           const user = JSON.parse(userDataStr);
           currentUserId = user.id;
+          console.log("Dashboard - Fetching for User ID:", currentUserId);
         } catch (e) {
           console.error("Error parsing user data:", e);
         }
       }
 
-      // Fetch from both endpoints for complete data
+      // Fetch from both endpoints: one for activity logs, one for precise statistics
       const [dashRes, statsRes] = await Promise.all([
         axios.get(`${BASE_URL}/sales/dashboard`, {
           params: { sales_id: currentUserId },
           headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get(`${BASE_URL}/sales/statistics`, {
+        }).catch(e => ({ data: { success: false } })),
+        axios.get(`${BASE_URL}/sales/order/statistic-per-sales`, {
           headers: { Authorization: `Bearer ${token}` }
-        })
+        }).catch(e => ({ data: { success: false } }))
       ]);
 
-      // 1. Process Statistics Data (Priority for Performance)
-      if (statsRes.data?.success && Array.isArray(statsRes.data.data?.statistics)) {
-        const statsList = statsRes.data.data.statistics;
+      // 1. Process Individual Sales Statistics
+      const statsJson = statsRes.data;
+      if (statsJson.success && Array.isArray(statsJson.data)) {
+        const statsList = statsJson.data;
         const myStats = statsList.find(s => Number(s.sales_id) === Number(currentUserId));
 
         if (myStats) {
-          setMePerformance(myStats);
+          console.log("Dashboard - Found Stats for My Account:", myStats);
 
-          // Update cards based on statistics data
           setOrderStats(prev => ({
             ...prev,
-            totalOrders: myStats.orders?.total || 0,
-            totalRevenue: myStats.revenue?.this_period || 0,
-            totalRevenueFormatted: myStats.revenue?.this_period_formatted || "Rp 0",
-            conversionRate: myStats.conversion_rates?.customer_to_order || 0,
-            conversionRateFormatted: myStats.conversion_rates?.customer_to_order_formatted || "0.00%",
+            totalOrders: Number(myStats.total_order) || 0,
+            unpaidCount: Number(myStats.total_order_unpaid) || 0,
+            prosesCount: Number(myStats.total_order_menunggu) || 0,
+            paidCount: Number(myStats.total_order_sudah_diapprove) || 0,
+            totalRevenue: Number(myStats.revenue) || 0,
+            totalRevenueFormatted: formatCurrency(myStats.revenue),
+            conversionRateFormatted: myStats.total_order > 0
+              ? `${((myStats.total_order_sudah_diapprove / myStats.total_order) * 100).toFixed(2)}%`
+              : "0.00%",
           }));
+
+          // Me performance wrapper for UI components
+          setMePerformance({
+            ...myStats,
+            conversion_rate_formatted: myStats.total_order > 0
+              ? `${((myStats.total_order_sudah_diapprove / myStats.total_order) * 100).toFixed(2)}%`
+              : "0.00%"
+          });
         }
       }
 
-      // 2. Process Dashboard Data (For Recent Orders, Logs, and Overview)
+      // 2. Process Dashboard Data (Activity & Recent)
       const dashJson = dashRes.data;
-      const dashData = dashJson.data || (dashJson.statistik ? dashJson : null);
+      const data = dashJson.data || (dashJson.statistik ? dashJson : null);
 
-      if (dashJson.success && dashData) {
-        setDashboardStats(dashData);
-
-        // Fill in missing cards that aren't in statistics (Unpaid, Pending, etc.)
-        setOrderStats(prev => ({
-          ...prev,
-          prosesCount: dashData.overview?.orders_unpaid || 0,
-          paidCount: dashData.overview?.orders_paid || 0,
-          unpaidCount: dashData.overview?.orders_unpaid || 0,
-          // Only overwrite if statistics didn't provide them
-          totalOrders: prev.totalOrders || dashData.overview?.orders_total || 0,
-          totalRevenueFormatted: prev.totalRevenueFormatted || dashData.statistik?.total_penjualan_bulan_ini_formatted || "Rp 0"
-        }));
-
-        setRecentOrders(dashData.pembelian_terakhir || []);
-        setFollowUpHistory(dashData.riwayat_follow_up || []);
+      if (dashJson.success && data) {
+        setDashboardStats(data);
+        setRecentOrders(data.pembelian_terakhir || []);
+        setFollowUpHistory(data.riwayat_follow_up || []);
       }
     } catch (err) {
-      console.error("Error fetching dashboard data:", err);
+      console.error("Critical error fetching dashboard:", err);
     } finally {
       setLoading(false);
     }
