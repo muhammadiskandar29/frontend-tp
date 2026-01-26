@@ -378,9 +378,10 @@ export default function Dashboard() {
             </article>
           </section>
         </div>
+      </div>
 
 
-        <style jsx>{`
+      <style jsx>{`
         .dashboard-grid-two-columns {
           display: grid;
           grid-template-columns: 1.5fr 1fr;
