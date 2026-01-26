@@ -103,37 +103,38 @@ export default function Dashboard() {
       }
 
       const response = await axios.get(`${BASE_URL}/sales/dashboard`, {
+        params: { sales_id: currentUserId },
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (response.data?.success) {
-        const data = response.data.data;
+      // Handle both cases: response.data.data or just response.data
+      const json = response.data;
+      const data = json.data || (json.statistik ? json : null);
 
-        // 1. Overview & Statistik
+      if (json.success && data) {
         setDashboardStats(data);
 
-        // 2. Find "Me" in sales_performance
-        if (data.sales_performance && currentUserId) {
-          const me = data.sales_performance.find(s => Number(s.sales_id) === Number(currentUserId));
-          setMePerformance(me);
-        }
+        // Find me in performance array or use the user provided in response
+        const me = (data.sales_performance || []).find(s => Number(s.sales_id) === Number(currentUserId))
+          || (data.user && Number(data.user.id) === Number(currentUserId) ? data.sales_performance?.[0] : null);
 
-        // 3. Update Order Stats for Cards
+        setMePerformance(me);
+
+        // Update Order Stats with fallbacks
         setOrderStats({
-          totalOrders: data.overview?.orders_total || 0,
-          totalRevenue: data.statistik?.total_penjualan_bulan_ini || 0,
-          totalRevenueFormatted: data.statistik?.total_penjualan_bulan_ini_formatted || "Rp 0",
-          prosesCount: data.overview?.orders_unpaid || 0, // In this context maybe unpaid is pending
+          totalOrders: data.overview?.orders_total || me?.total_leads || 0,
+          totalRevenue: data.statistik?.total_penjualan_bulan_ini || data.financial?.gross_revenue || 0,
+          totalRevenueFormatted: data.statistik?.total_penjualan_bulan_ini_formatted
+            || data.financial?.gross_revenue_formatted
+            || formatCurrency(data.statistik?.total_penjualan_bulan_ini || 0),
+          prosesCount: data.overview?.orders_unpaid || 0,
           paidCount: data.overview?.orders_paid || 0,
           unpaidCount: data.overview?.orders_unpaid || 0,
-          conversionRate: data.overview?.paid_ratio || 0,
-          conversionRateFormatted: data.overview?.paid_ratio_formatted || "0.00%",
+          conversionRate: data.overview?.paid_ratio || me?.conversion_rate || 0,
+          conversionRateFormatted: data.overview?.paid_ratio_formatted || me?.conversion_rate_formatted || "0.00%",
         });
 
-        // 4. Recent Orders
         setRecentOrders(data.pembelian_terakhir || []);
-
-        // 5. Follow Up History
         setFollowUpHistory(data.riwayat_follow_up || []);
       }
     } catch (err) {
