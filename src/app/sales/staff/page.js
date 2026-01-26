@@ -18,7 +18,7 @@ import {
   TrendingUp,
   ArrowRight,
 } from "lucide-react";
-import { getOrders } from "@/lib/sales/orders";
+import { getOrders, getOrderStatisticPerSales } from "@/lib/sales/orders";
 import Link from "next/link";
 import axios from "axios";
 
@@ -103,50 +103,42 @@ export default function Dashboard() {
         }
       }
 
-      // Fetch from both endpoints: one for activity logs, one for precise statistics
-      const [dashRes, statsRes] = await Promise.all([
-        axios.get(`${BASE_URL}/sales/dashboard`, {
-          params: { sales_id: currentUserId },
-          headers: { Authorization: `Bearer ${token}` }
-        }).catch(e => ({ data: { success: false } })),
-        axios.get(`${BASE_URL}/sales/order/statistic-per-sales`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }).catch(e => ({ data: { success: false } }))
-      ]);
-
-      // 1. Process Individual Sales Statistics
-      const statsJson = statsRes.data;
-      if (statsJson.success && Array.isArray(statsJson.data)) {
-        const statsList = statsJson.data;
-        const myStats = statsList.find(s => Number(s.sales_id) === Number(currentUserId));
-
-        if (myStats) {
-          console.log("Dashboard - Found Stats for My Account:", myStats);
-
-          setOrderStats(prev => ({
-            ...prev,
-            totalOrders: Number(myStats.total_order) || 0,
-            unpaidCount: Number(myStats.total_order_unpaid) || 0,
-            prosesCount: Number(myStats.total_order_menunggu) || 0,
-            paidCount: Number(myStats.total_order_sudah_diapprove) || 0,
-            totalRevenue: Number(myStats.revenue) || 0,
-            totalRevenueFormatted: formatCurrency(myStats.revenue),
-            conversionRateFormatted: myStats.total_order > 0
-              ? `${((myStats.total_order_sudah_diapprove / myStats.total_order) * 100).toFixed(2)}%`
-              : "0.00%",
-          }));
-
-          // Me performance wrapper for UI components
-          setMePerformance({
-            ...myStats,
-            conversion_rate_formatted: myStats.total_order > 0
-              ? `${((myStats.total_order_sudah_diapprove / myStats.total_order) * 100).toFixed(2)}%`
-              : "0.00%"
-          });
+      // 1. Process Individual Sales Statistics (Using same logic as Orders page)
+      try {
+        const statsData = await getOrderStatisticPerSales();
+        if (statsData && Array.isArray(statsData) && statsData.length > 0) {
+          const myStats = statsData.find(s => Number(s.sales_id) === Number(currentUserId)) || statsData[0];
+          if (myStats) {
+            setOrderStats(prev => ({
+              ...prev,
+              totalOrders: Number(myStats.total_order) || 0,
+              unpaidCount: Number(myStats.total_order_unpaid) || 0,
+              prosesCount: Number(myStats.total_order_menunggu) || 0,
+              paidCount: Number(myStats.total_order_sudah_diapprove) || 0,
+              totalRevenue: Number(myStats.revenue) || 0,
+              totalRevenueFormatted: formatCurrency(myStats.revenue),
+              conversionRateFormatted: myStats.total_order > 0
+                ? `${((myStats.total_order_sudah_diapprove / myStats.total_order) * 100).toFixed(2)}%`
+                : "0.00%",
+            }));
+            setMePerformance({
+              ...myStats,
+              conversion_rate_formatted: myStats.total_order > 0
+                ? `${((myStats.total_order_sudah_diapprove / myStats.total_order) * 100).toFixed(2)}%`
+                : "0.00%"
+            });
+          }
         }
+      } catch (err) {
+        console.error("Error loading order statistics:", err);
       }
 
       // 2. Process Dashboard Data (Activity & Recent)
+      const dashRes = await axios.get(`${BASE_URL}/sales/dashboard`, {
+        params: { sales_id: currentUserId },
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(e => ({ data: { success: false } }));
+
       const dashJson = dashRes.data;
       const data = dashJson.data || (dashJson.statistik ? dashJson : null);
 
