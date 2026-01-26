@@ -200,24 +200,24 @@ export default function BonusProdukPage() {
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <div className="action-buttons-minimal">
+                                                        <div className="action-buttons-premium">
                                                             <Link
                                                                 href={`/article/${article.slug}`}
                                                                 target="_blank"
-                                                                className="btn-icon-action"
+                                                                className="btn-view-boxed"
                                                                 title="View Result"
                                                             >
                                                                 <Eye size={18} />
                                                             </Link>
                                                             <button
-                                                                className="btn-icon-action"
+                                                                className="btn-edit-boxed"
                                                                 onClick={() => handleEdit(article)}
                                                                 title="Edit"
                                                             >
                                                                 <Edit2 size={18} />
                                                             </button>
                                                             <button
-                                                                className="btn-icon-action delete"
+                                                                className="btn-delete-boxed"
                                                                 onClick={() => handleDelete(article.id)}
                                                                 title="Delete"
                                                             >
@@ -423,32 +423,38 @@ export default function BonusProdukPage() {
                     color: #64748b;
                 }
 
-                .action-buttons-minimal {
+                .action-buttons-premium {
                     display: flex;
                     justify-content: flex-end;
-                    gap: 8px;
+                    align-items: center;
+                    gap: 12px;
                 }
-                .btn-icon-action {
-                    background: white;
+                .btn-view-boxed, .btn-edit-boxed, .btn-delete-boxed {
+                    background: #fff;
                     border: 1px solid #e2e8f0;
                     color: #64748b;
-                    padding: 8px;
-                    border-radius: 8px;
+                    width: 38px;
+                    height: 38px;
+                    border-radius: 10px;
                     cursor: pointer;
                     transition: all 0.2s;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                 }
-                .btn-icon-action:hover {
-                    color: #ff7a00;
+                .btn-view-boxed:hover {
                     border-color: #ff7a00;
+                    color: #ff7a00;
                     background: #fff7ed;
-                    transform: translateY(-2px);
                 }
-                .btn-icon-action.delete:hover {
-                    color: #ef4444;
+                .btn-edit-boxed:hover {
+                    border-color: #3b82f6;
+                    color: #3b82f6;
+                    background: #eff6ff;
+                }
+                .btn-delete-boxed:hover {
                     border-color: #ef4444;
+                    color: #ef4444;
                     background: #fef2f2;
                 }
 
