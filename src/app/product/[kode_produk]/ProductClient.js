@@ -384,9 +384,8 @@ function ProductClient({ initialProductData, initialLandingPage }) {
 
         console.log(`[CLIENT-FETCH] Mengambil data segar untuk: ${kode_produk}...`);
 
-        const timestamp = new Date().getTime();
-        const res = await fetch(`/api/landing/${kode_produk}?t=${timestamp}`, {
-          cache: 'no-store', // ❌ BYPASS TOTAL CACHE BROWSER & NEXT.JS
+        const res = await fetch(`/api/landing/${kode_produk}`, {
+          cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
@@ -465,9 +464,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
       try {
         console.log('[LIVE-SYNC] Mendapat sinyal update, mengambil data terbaru...');
 
-        // 🔥 CACHE BUSTER di Live Sync juga
-        const timestamp = new Date().getTime();
-        const res = await fetch(`/api/landing/${kode_produk}?t=${timestamp}`, {
+        const res = await fetch(`/api/landing/${kode_produk}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',

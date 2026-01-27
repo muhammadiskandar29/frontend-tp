@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { BACKEND_URL } from "@/config/env";
 
+/**
+ * ⚠️ WARNING: AREA SENSITIF CACHE ⚠️
+ * Route ini adalah 'Single Source of Truth' untuk data produk.
+ * Arsitektur ini membypass Next.js Rewrite Proxy untuk menghindari stale data.
+ * JANGAN mengubah strategi caching atau mengaktifkan revalidate tanpa diskusi arsitektur.
+ */
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -73,17 +79,26 @@ export async function GET(request, { params }) {
 
     console.log(`[LANDING] Product found: ${data.data?.nama || data.nama}`);
 
-    return NextResponse.json(data);
+    // 🔥 SOLUSI FINAL: Gunakan Response manual agar header Cache-Control murni 'no-store'
+    return new Response(JSON.stringify(data), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    });
   } catch (error) {
     console.error("[LANDING] Error:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Gagal mengambil data produk",
-        error: error.message,
-      },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({
+      success: false,
+      message: "Gagal mengambil data produk",
+      error: error.message,
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
   }
 }
 
