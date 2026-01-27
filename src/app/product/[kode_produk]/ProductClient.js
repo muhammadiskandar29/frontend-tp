@@ -384,7 +384,8 @@ function ProductClient({ initialProductData, initialLandingPage }) {
 
         console.log(`[CLIENT-FETCH] Mengambil data segar untuk: ${kode_produk}...`);
 
-        const res = await fetch(`/api/landing/${kode_produk}`, {
+        const timestamp = new Date().getTime();
+        const res = await fetch(`/api/landing/${kode_produk}?t=${timestamp}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -464,7 +465,8 @@ function ProductClient({ initialProductData, initialLandingPage }) {
       try {
         console.log('[LIVE-SYNC] Mendapat sinyal update, mengambil data terbaru...');
 
-        const res = await fetch(`/api/landing/${kode_produk}`, {
+        const timestamp = new Date().getTime();
+        const res = await fetch(`/api/landing/${kode_produk}?t=${timestamp}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',

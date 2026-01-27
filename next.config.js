@@ -40,12 +40,6 @@ const nextConfig = {
         source: "/api/login",
         destination: "/api/login",
       },
-      // 🔥 CRITICAL: EXCLUDE /api/landing agar dihandle oleh API Route (src/app/api/landing/route.js) 
-      // Jalur ini bypass Next.js Rewrite Engine Cache. JANGAN DIHAPUS.
-      {
-        source: "/api/landing/:path*",
-        destination: "/api/landing/:path*",
-      },
       // Rewrite other API routes to backend
       {
         source: "/api/:path*",
