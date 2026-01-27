@@ -362,6 +362,8 @@ function ProductClient({ initialProductData, initialLandingPage }) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  const sumber = searchParams.get("utm_sumber") || "website";
+
   // Data State - Mulai dengan null untuk menjamin kesegaran
   const [productData, setProductData] = useState(null);
   const [landingpage, setLandingpage] = useState(null);
