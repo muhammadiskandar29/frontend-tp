@@ -90,15 +90,18 @@ export async function generateViewport() {
 export default async function ProductPage({ params }) {
   const { kode_produk } = await params;
 
-  // Kita TIDAK lagi fetch data di sini untuk dikirim ke Client sebagai props.
-  // Kenapa? Karena props sering terjebak di Router Cache Next.js.
-  // Server Component ini sekarang hanya bertugas sebagai 'cangkang' dan penyuplai metadata (generateMetadata).
+  // 1. Fetch data di server
+  const result = await getProduct(kode_produk);
+
+  // Prepare Props
+  const initialProductData = result?.success ? result.data : null;
+  const initialLandingPage = result?.success ? result.landingpage : null;
 
   return (
     <ProductClient
       key={kode_produk}
-    // initialProductData={null}
-    // initialLandingPage={null}
+      initialProductData={initialProductData}
+      initialLandingPage={initialLandingPage}
     />
   );
 }

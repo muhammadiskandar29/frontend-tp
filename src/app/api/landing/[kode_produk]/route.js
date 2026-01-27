@@ -73,7 +73,14 @@ export async function GET(request, { params }) {
 
     console.log(`[LANDING] Product found: ${data.data?.nama || data.nama}`);
 
-    return NextResponse.json(data);
+    const responseObj = NextResponse.json(data);
+
+    // 🔥 PAKSA BROWSER TIDAK CACHE API
+    responseObj.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    responseObj.headers.set('Pragma', 'no-cache');
+    responseObj.headers.set('Expires', '0');
+
+    return responseObj;
   } catch (error) {
     console.error("[LANDING] Error:", error);
     return NextResponse.json(
