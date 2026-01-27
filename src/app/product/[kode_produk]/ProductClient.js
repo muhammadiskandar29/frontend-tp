@@ -372,6 +372,9 @@ function ProductClient({ initialProductData, initialLandingPage }) {
 
   // ✅ LIVE SYNC: Dengerin sinyal dari tab Edit
   useEffect(() => {
+    // Paksa refresh router saat pertama kali mounting untuk memastikan data fresh
+    router.refresh();
+
     // Fungsi untuk fetch ulang data paling baru secara manual
     const refreshData = async () => {
       try {
@@ -390,6 +393,10 @@ function ProductClient({ initialProductData, initialLandingPage }) {
           // Update state internal dengan data paling fresh
           setProductData(result.data);
           setLandingpage(result.landingpage);
+
+          // Paksa Next.js router untuk refresh data-data server-side props juga
+          router.refresh();
+
           console.log('[LIVE-SYNC] Data berhasil di-update secara instan di browser!');
         } else {
           // Fallback refresh halaman jika gagal

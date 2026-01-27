@@ -8,10 +8,17 @@ export const revalidate = 0;
 // Helper function to fetch product data on server
 async function getProduct(kode_produk) {
   try {
-    const url = getBackendUrl(`landing/${kode_produk}`);
+    // Tambahkan timestamp untuk menghindari cache di level backend/proxy manapun
+    const timestamp = new Date().getTime();
+    const url = getBackendUrl(`landing/${kode_produk}?t=${timestamp}`);
 
     const res = await fetch(url, {
-      cache: 'no-store'
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
 
     if (!res.ok) {

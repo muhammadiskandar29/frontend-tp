@@ -72,8 +72,17 @@ export function middleware(req) {
     }
   }
 
-  // 4. Force No-Cache for Internal Pages (Optional - based on target)
+  // 4. Force No-Cache for Product and Article Pages
   const response = NextResponse.next();
+
+  // Jika ini rute produk atau artikel, paksa browser untuk tidak nge-cache HTML-nya
+  if (pathname.startsWith("/product") || pathname.startsWith("/article")) {
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    response.headers.set('Surrogate-Control', 'no-store');
+  }
+
   return response;
 }
 
@@ -95,5 +104,7 @@ export const config = {
     "/sales/:path*",
     "/finance/:path*",
     "/hr/:path*",
+    "/product/:path*",
+    "/article/:path*",
   ],
 };
