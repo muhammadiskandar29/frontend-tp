@@ -362,20 +362,55 @@ function ProductClient({ initialProductData, initialLandingPage }) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const sumber = searchParams.get("utm_sumber") || "website";
-
-  // Data State
-  const [productData, setProductData] = useState(initialProductData || null);
-  const [landingpage, setLandingpage] = useState(initialLandingPage || null);
-  const [loading, setLoading] = useState(!initialProductData);
+  // Data State - Mulai dengan null untuk menjamin kesegaran
+  const [productData, setProductData] = useState(null);
+  const [landingpage, setLandingpage] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [testimoniIndices, setTestimoniIndices] = useState({});
+
+  // 🔥 SOLUSI FINAL: Satu Sumber Kebenaran (Fetch Fresh dari Client)
+  // Tidak lagi percaya initialProductData dari Server Props karena rawan cache Next.js
+  useEffect(() => {
+    const fetchFreshData = async () => {
+      if (!kode_produk) return;
+
+      try {
+        setLoading(true);
+        // Paksa null agar UI bersih dari data produk sebelumnya
+        setProductData(null);
+        setLandingpage(null);
+
+        console.log(`[CLIENT-FETCH] Mengambil data segar untuk: ${kode_produk}...`);
+
+        const res = await fetch(`/api/landing/${kode_produk}`, {
+          cache: 'no-store', // ❌ BYPASS TOTAL CACHE BROWSER & NEXT.JS
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          }
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          setProductData(result.data);
+          setLandingpage(result.landingpage);
+          console.log('[CLIENT-FETCH] Data Berhasil di-update (Fresh)!');
+        } else {
+          toast.error("Produk tidak ditemukan");
+        }
+      } catch (e) {
+        console.error('[CLIENT-FETCH] Error:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFreshData();
+  }, [kode_produk]);
 
   // ✅ LIVE SYNC: Dengerin sinyal dari tab Edit
   useEffect(() => {
-    // Paksa refresh router saat pertama kali mounting untuk memastikan data fresh
-    router.refresh();
-
-    // Fungsi untuk fetch ulang data paling baru secara manual
+    // Fungsi untuk fetch ulang data paling baru secara manual (tanpa Router Refresh)
     const refreshData = async () => {
       try {
         console.log('[LIVE-SYNC] Mendapat sinyal update, mengambil data terbaru...');
@@ -393,13 +428,9 @@ function ProductClient({ initialProductData, initialLandingPage }) {
           // Update state internal dengan data paling fresh
           setProductData(result.data);
           setLandingpage(result.landingpage);
-
-          // Paksa Next.js router untuk refresh data-data server-side props juga
-          router.refresh();
-
           console.log('[LIVE-SYNC] Data berhasil di-update secara instan di browser!');
         } else {
-          // Fallback refresh halaman jika gagal
+          // Fallback reload hanya jika benar-benar gagal total
           window.location.reload();
         }
       } catch (e) {

@@ -8,9 +8,7 @@ export const revalidate = 0;
 // Helper function to fetch product data on server
 async function getProduct(kode_produk) {
   try {
-    // Tambahkan timestamp untuk menghindari cache di level backend/proxy manapun
-    const timestamp = new Date().getTime();
-    const url = getBackendUrl(`landing/${kode_produk}?t=${timestamp}`);
+    const url = getBackendUrl(`landing/${kode_produk}`);
 
     const res = await fetch(url, {
       cache: 'no-store',
@@ -35,7 +33,7 @@ async function getProduct(kode_produk) {
 }
 
 export async function generateMetadata({ params }) {
-  const { kode_produk } = params;
+  const { kode_produk } = await params;
   const result = await getProduct(kode_produk);
 
   if (!result || !result.success) {
@@ -90,20 +88,17 @@ export async function generateViewport() {
 
 // ✅ Server Component Wrapper
 export default async function ProductPage({ params }) {
-  headers(); // ← PENTING: Menandai request ini truly request-bound & mematikan browser disk cache
-  const { kode_produk } = params;
+  const { kode_produk } = await params;
 
-  // Fetch data di server
-  const result = await getProduct(kode_produk);
-
-  // Prepare Props
-  const initialProductData = result?.success ? result.data : null;
-  const initialLandingPage = result?.success ? result.landingpage : null;
+  // Kita TIDAK lagi fetch data di sini untuk dikirim ke Client sebagai props.
+  // Kenapa? Karena props sering terjebak di Router Cache Next.js.
+  // Server Component ini sekarang hanya bertugas sebagai 'cangkang' dan penyuplai metadata (generateMetadata).
 
   return (
     <ProductClient
-      initialProductData={initialProductData}
-      initialLandingPage={initialLandingPage}
+      key={kode_produk}
+    // initialProductData={null}
+    // initialLandingPage={null}
     />
   );
 }
