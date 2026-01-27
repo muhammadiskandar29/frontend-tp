@@ -393,15 +393,61 @@ function ProductClient({ initialProductData, initialLandingPage }) {
         });
         const result = await res.json();
 
-        if (result.success) {
-          setProductData(result.data);
-          setLandingpage(result.landingpage);
+        if (result.success && result.data) {
+          const data = result.data;
+
+          // 1. Progress Bundling Data
+          let bundlingData = [];
+          if (data.bundling_rel && Array.isArray(data.bundling_rel)) {
+            bundlingData = data.bundling_rel
+              .filter(item => item.status === 'A')
+              .map(item => ({
+                ...item,
+                id: item.id,
+                nama: item.nama,
+                harga: typeof item.harga === 'string' ? parseInt(item.harga) : item.harga
+              }));
+          } else if (data.bundling) {
+            if (typeof data.bundling === 'string') {
+              try { bundlingData = JSON.parse(data.bundling); } catch (e) { bundlingData = []; }
+            } else if (Array.isArray(data.bundling)) {
+              bundlingData = data.bundling;
+            }
+          }
+
+          // 2. Set Product Data
+          setProductData({
+            id: data.id,
+            nama: data.nama,
+            harga: data.harga,
+            harga_asli: data.harga_asli,
+            harga_coret: data.harga_coret,
+            kategori: data.kategori,
+            kategori_id: data.kategori_id,
+            kategori_rel: data.kategori_rel,
+            isBundling: (bundlingData && bundlingData.length > 0) || false,
+            bundling: bundlingData,
+          });
+
+          // 3. Process Landingpage Array
+          let lpData = data.landingpage;
+          if (typeof lpData === 'string') {
+            try { lpData = JSON.parse(lpData); } catch (e) { lpData = null; }
+          }
+
+          if (Array.isArray(lpData)) {
+            // ✅ NORMALISASI DATA: Penting agar section & child sinkron
+            lpData = normalizeLandingpageData(lpData);
+            setLandingpage(lpData);
+          }
+
           console.log('[CLIENT-FETCH] Data Berhasil di-update (Fresh)!');
         } else {
           toast.error("Produk tidak ditemukan");
         }
       } catch (e) {
         console.error('[CLIENT-FETCH] Error:', e);
+        toast.error("Gagal memuat data produk terbaru");
       } finally {
         setLoading(false);
       }
@@ -2290,131 +2336,6 @@ function ProductClient({ initialProductData, initialLandingPage }) {
     }
   }, [selectedWilayahIds.districtId, handleCalculateOngkir]);
 
-  // ✅ OPTIMASI: Fetch Data dari Backend dengan non-blocking approach
-  useEffect(() => {
-    // ✅ Skip fetch if we already have initial data from server
-    if (initialProductData && initialLandingPage) {
-      setLoading(false);
-      return;
-    }
-
-    async function fetchProduct() {
-      if (!kode_produk) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        // ✅ OPTIMASI: Defer loading state untuk mengurangi blocking
-        const timeoutId = setTimeout(() => setLoading(true), 50);
-
-        // ✅ OPTIMASI: Timeout sebagai fail-safe (bukan optimasi performa utama)
-        const controller = new AbortController();
-        const fetchTimeoutId = setTimeout(() => controller.abort(), 5000);
-
-        // ✅ OPTIMASI: Gunakan cache dengan stale-while-revalidate strategy (ISR)
-        const res = await fetch(`/api/landing/${kode_produk}`, {
-          cache: "force-cache", // ✅ OPTIMASI: Force cache untuk mengurangi network requests
-          next: { revalidate: 60 }, // Revalidate setiap 60 detik
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-        clearTimeout(fetchTimeoutId);
-
-        const json = await res.json();
-
-        if (!res.ok || !json.success || !json.data) {
-          throw new Error(json.message || "Produk tidak ditemukan");
-        }
-
-        const data = json.data;
-
-        // ✅ FIX: Ambil bundling dari bundling_rel (relasi database)
-        // bundling_rel adalah array dari relasi database, bukan JSON string
-        let bundlingData = [];
-        if (data.bundling_rel && Array.isArray(data.bundling_rel)) {
-          // Map bundling_rel ke format yang diharapkan
-          bundlingData = data.bundling_rel
-            .filter(item => item.status === 'A') // Hanya ambil yang status aktif
-            .map(item => ({
-              ...item,
-              id: item.id,
-              nama: item.nama,
-              harga: typeof item.harga === 'string' ? parseInt(item.harga) : item.harga
-            }));
-        } else if (data.bundling) {
-          // Fallback untuk data lama (legacy)
-          if (typeof data.bundling === 'string') {
-            try {
-              bundlingData = JSON.parse(data.bundling);
-            } catch (e) {
-              console.warn("[PRODUCT] Failed to parse bundling string:", e);
-              bundlingData = [];
-            }
-          } else if (Array.isArray(data.bundling)) {
-            bundlingData = data.bundling;
-          }
-        }
-
-        if (!Array.isArray(bundlingData)) {
-          bundlingData = [];
-        }
-
-        // Set product data
-        setProductData({
-          id: data.id,
-          nama: data.nama,
-          harga: data.harga,
-          harga_asli: data.harga_asli,
-          harga_coret: data.harga_coret,
-          kategori: data.kategori,
-          kategori_id: data.kategori_id,
-          kategori_rel: data.kategori_rel,
-          // ✅ FIX: Cek jika bundling array ada dan tidak kosong
-          isBundling: (bundlingData && Array.isArray(bundlingData) && bundlingData.length > 0) || false,
-          bundling: bundlingData,
-        });
-
-        // Parse landingpage array
-        let landingpageData = data.landingpage;
-
-        // Handle jika landingpage adalah string (legacy), parse ke array
-        if (typeof landingpageData === 'string') {
-          try {
-            landingpageData = JSON.parse(landingpageData);
-          } catch (e) {
-            console.warn("[PRODUCT] Failed to parse landingpage string:", e);
-            landingpageData = null;
-          }
-        }
-
-        // Pastikan landingpage adalah array
-        if (!Array.isArray(landingpageData)) {
-          console.warn("[PRODUCT] landingpage is not an array:", landingpageData);
-          landingpageData = null;
-        } else {
-          // ✅ NORMALISASI DATA: Tambahkan parentId ke child blocks
-          landingpageData = normalizeLandingpageData(landingpageData);
-        }
-
-        setLandingpage(landingpageData);
-
-      } catch (err) {
-        console.error("[PRODUCT] Error fetching product:", err);
-        if (err.name === 'AbortError') {
-          toast.error("Timeout: Data terlalu lama dimuat. Silakan refresh halaman.");
-        } else {
-          toast.error(err.message || "Gagal memuat data produk");
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    // Note: Di Server Component fetch otomatis blocking untuk SSR, di Client Component sudah async
-    fetchProduct();
-  }, [kode_produk, initialProductData, initialLandingPage]);
 
   // ✅ MOVED UP: Derived state and hooks MUST be before any conditional returns
   const settings = landingpage && Array.isArray(landingpage)
