@@ -364,94 +364,108 @@ function ProductClient({ initialProductData, initialLandingPage }) {
 
   const sumber = searchParams.get("utm_sumber") || "website";
 
-  // ✅ DATA PROCESSING HELPERS (Robust)
-  const processLandingPage = useCallback((rawLP) => {
-    let lpData = rawLP;
-    if (typeof lpData === 'string') {
-      try { lpData = JSON.parse(lpData); } catch (e) { lpData = []; }
-    }
-    if (!Array.isArray(lpData)) lpData = [];
-    return normalizeLandingpageData(lpData);
-  }, []);
-
-  const processProductData = useCallback((rawProduct) => {
-    if (!rawProduct) return null;
-
-    // Mapping Bundling
-    let bundlingData = [];
-    if (rawProduct.bundling_rel && Array.isArray(rawProduct.bundling_rel)) {
-      bundlingData = rawProduct.bundling_rel
-        .filter(item => item.status === 'A' || item.status === 1)
-        .map(item => ({
-          ...item,
-          id: item.id,
-          nama: item.nama,
-          harga: typeof item.harga === 'string' ? parseInt(item.harga) : item.harga
-        }));
-    } else if (rawProduct.bundling) {
-      if (typeof rawProduct.bundling === 'string') {
-        try { bundlingData = JSON.parse(rawProduct.bundling); } catch (e) { bundlingData = []; }
-      } else if (Array.isArray(rawProduct.bundling)) {
-        bundlingData = rawProduct.bundling;
-      }
-    }
-
-    return {
-      ...rawProduct,
-      isBundling: bundlingData && bundlingData.length > 0,
-      bundling: bundlingData,
-    };
-  }, []);
-
-  const [productData, setProductData] = useState(() => processProductData(initialProductData));
-  const [landingpage, setLandingpage] = useState(() => processLandingPage(initialLandingPage));
-  const [loading, setLoading] = useState(!initialProductData);
+  // Data State - Mulai dengan null untuk menjamin kesegaran
+  const [productData, setProductData] = useState(null);
+  const [landingpage, setLandingpage] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [testimoniIndices, setTestimoniIndices] = useState({});
 
-  // Sinkronisasi data jika props berubah (sebagai fail-safe)
+  // 🔥 SOLUSI FINAL: Satu Sumber Kebenaran (Fetch Fresh dari Client)
+  // Tidak lagi percaya initialProductData dari Server Props karena rawan cache Next.js
   useEffect(() => {
-    if (initialProductData) {
-      setProductData(processProductData(initialProductData));
-      setLoading(false);
-    }
-    if (initialLandingPage) {
-      setLandingpage(processLandingPage(initialLandingPage));
-    }
-  }, [initialProductData, initialLandingPage, processProductData, processLandingPage]);
+    const fetchFreshData = async () => {
+      if (!kode_produk) return;
 
-  // ✅ AUTO-FETCH FALLBACK: Jika data dari server kosong, coba fetch di client
-  useEffect(() => {
-    if (!productData) {
-      const fetchFreshData = async () => {
-        try {
-          setLoading(true);
-          const timestamp = new Date().getTime();
-          const res = await fetch(`/api/landing/${kode_produk}?t=${timestamp}`, {
-            cache: 'no-store'
-          });
-          const result = await res.json();
-          if (result.success) {
-            setProductData(processProductData(result.data));
-            setLandingpage(processLandingPage(result.landingpage));
+      try {
+        setLoading(true);
+        // Paksa null agar UI bersih dari data produk sebelumnya
+        setProductData(null);
+        setLandingpage(null);
+
+        console.log(`[CLIENT-FETCH] Mengambil data segar untuk: ${kode_produk}...`);
+
+        const timestamp = new Date().getTime();
+        const res = await fetch(`/api/landing/${kode_produk}?t=${timestamp}`, {
+          cache: 'no-store', // ❌ BYPASS TOTAL CACHE BROWSER & NEXT.JS
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
           }
-        } catch (e) {
-          console.error('[CLIENT-FALLBACK] Gagal fetch data:', e);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchFreshData();
-    }
-  }, [productData, kode_produk, processProductData, processLandingPage]);
+        });
+        const result = await res.json();
 
-  // ✅ Derived State
-  const isBundling = productData?.isBundling || false;
+        if (result.success && result.data) {
+          const data = result.data;
+
+          // 1. Progress Bundling Data
+          let bundlingData = [];
+          if (data.bundling_rel && Array.isArray(data.bundling_rel)) {
+            bundlingData = data.bundling_rel
+              .filter(item => item.status === 'A')
+              .map(item => ({
+                ...item,
+                id: item.id,
+                nama: item.nama,
+                harga: typeof item.harga === 'string' ? parseInt(item.harga) : item.harga
+              }));
+          } else if (data.bundling) {
+            if (typeof data.bundling === 'string') {
+              try { bundlingData = JSON.parse(data.bundling); } catch (e) { bundlingData = []; }
+            } else if (Array.isArray(data.bundling)) {
+              bundlingData = data.bundling;
+            }
+          }
+
+          // 2. Set Product Data
+          setProductData({
+            id: data.id,
+            nama: data.nama,
+            harga: data.harga,
+            harga_asli: data.harga_asli,
+            harga_coret: data.harga_coret,
+            kategori: data.kategori,
+            kategori_id: data.kategori_id,
+            kategori_rel: data.kategori_rel,
+            isBundling: (bundlingData && bundlingData.length > 0) || false,
+            bundling: bundlingData,
+          });
+
+          // 3. Process Landingpage Array
+          let lpData = data.landingpage;
+          if (typeof lpData === 'string') {
+            try { lpData = JSON.parse(lpData); } catch (e) { lpData = null; }
+          }
+
+          if (Array.isArray(lpData)) {
+            // ✅ NORMALISASI DATA: Penting agar section & child sinkron
+            lpData = normalizeLandingpageData(lpData);
+            setLandingpage(lpData);
+          }
+
+          console.log('[CLIENT-FETCH] Data Berhasil di-update (Fresh)!');
+        } else {
+          toast.error("Produk tidak ditemukan");
+        }
+      } catch (e) {
+        console.error('[CLIENT-FETCH] Error:', e);
+        toast.error("Gagal memuat data produk terbaru");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFreshData();
+  }, [kode_produk]);
 
   // ✅ LIVE SYNC: Dengerin sinyal dari tab Edit
   useEffect(() => {
+    // Fungsi untuk fetch ulang data paling baru secara manual (tanpa Router Refresh)
     const refreshData = async () => {
       try {
         console.log('[LIVE-SYNC] Mendapat sinyal update, mengambil data terbaru...');
+
+        // 🔥 CACHE BUSTER di Live Sync juga
         const timestamp = new Date().getTime();
         const res = await fetch(`/api/landing/${kode_produk}?t=${timestamp}`, {
           cache: 'no-store',
@@ -464,10 +478,12 @@ function ProductClient({ initialProductData, initialLandingPage }) {
         const result = await res.json();
 
         if (result.success) {
-          setProductData(processProductData(result.data));
-          setLandingpage(processLandingPage(result.landingpage));
+          // Update state internal dengan data paling fresh
+          setProductData(result.data);
+          setLandingpage(result.landingpage);
           console.log('[LIVE-SYNC] Data berhasil di-update secara instan di browser!');
         } else {
+          // Fallback reload hanya jika benar-benar gagal total
           window.location.reload();
         }
       } catch (e) {
@@ -485,7 +501,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
       };
       return () => bc.close();
     } catch (e) { }
-  }, [kode_produk, processLandingPage, processProductData]);
+  }, [kode_produk]);
 
   // -- HOOKS INTEGRATION --
 
@@ -2328,7 +2344,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
 
   // ✅ MOVED UP: Derived state and hooks MUST be before any conditional returns
   const settings = landingpage && Array.isArray(landingpage)
-    ? landingpage.find(item => item && item.type === 'settings')
+    ? landingpage.find(item => item.type === 'settings')
     : null;
 
   const logoUrl = buildImageUrl(settings?.logo) || '/assets/logo.png';
@@ -2516,25 +2532,8 @@ function ProductClient({ initialProductData, initialLandingPage }) {
     };
   }, [backgroundColor, kode_produk]);
 
-  // ✅ Loading indicator - Tampilkan pesan memuat daripada null agar tidak blank
-  if (loading) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        background: backgroundColor || '#ffffff',
-        fontFamily: 'sans-serif',
-        color: '#666'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div className="loading-spinner" style={{ marginBottom: '10px' }}></div>
-          <p>Memuat produk...</p>
-        </div>
-      </div>
-    );
-  }
+  // ✅ Loading indicator - Return NULL for clean loading state
+  if (loading) return null;
 
   // ✅ Jika tidak ada productData setelah loading selesai, tampilkan notifikasi
   if (!productData) {
@@ -2549,7 +2548,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
           gap: '1rem'
         }}>
           <h2>Produk tidak ditemukan</h2>
-          <p>{`Produk dengan kode "${kode_produk}" tidak ditemukan.`}</p>
+          <p>Produk dengan kode "{kode_produk}" tidak ditemukan.</p>
         </div>
       </div>
     );

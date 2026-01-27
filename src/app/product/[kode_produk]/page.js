@@ -42,17 +42,12 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  const { data: product, landingpage: rawLandingPage } = result;
-
-  // Parsing landingpage jika string (DB format)
-  let landingpage = rawLandingPage;
-  if (typeof landingpage === 'string') {
-    try { landingpage = JSON.parse(landingpage); } catch (e) { landingpage = []; }
-  }
-  if (!Array.isArray(landingpage)) landingpage = [];
+  const { data: product, landingpage } = result;
 
   // Logic ekstraksi settings yang sama dengan Client Component
-  const settings = landingpage.find(item => item && item.type === 'settings');
+  const settings = landingpage && Array.isArray(landingpage)
+    ? landingpage.find(item => item.type === 'settings')
+    : null;
 
   const title = settings?.seo_title || settings?.page_title || product?.nama || "Product Page";
   const description = settings?.meta_description || product?.deskripsi_singkat || "";
@@ -95,18 +90,15 @@ export async function generateViewport() {
 export default async function ProductPage({ params }) {
   const { kode_produk } = await params;
 
-  // 1. Fetch data di server
-  const result = await getProduct(kode_produk);
-
-  // Prepare Props
-  const initialProductData = result?.success ? result.data : null;
-  const initialLandingPage = result?.success ? result.landingpage : null;
+  // Kita TIDAK lagi fetch data di sini untuk dikirim ke Client sebagai props.
+  // Kenapa? Karena props sering terjebak di Router Cache Next.js.
+  // Server Component ini sekarang hanya bertugas sebagai 'cangkang' dan penyuplai metadata (generateMetadata).
 
   return (
     <ProductClient
       key={kode_produk}
-      initialProductData={initialProductData}
-      initialLandingPage={initialLandingPage}
+    // initialProductData={null}
+    // initialLandingPage={null}
     />
   );
 }
