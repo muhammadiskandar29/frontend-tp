@@ -42,12 +42,17 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  const { data: product, landingpage } = result;
+  const { data: product, landingpage: rawLandingPage } = result;
+
+  // Parsing landingpage jika string (DB format)
+  let landingpage = rawLandingPage;
+  if (typeof landingpage === 'string') {
+    try { landingpage = JSON.parse(landingpage); } catch (e) { landingpage = []; }
+  }
+  if (!Array.isArray(landingpage)) landingpage = [];
 
   // Logic ekstraksi settings yang sama dengan Client Component
-  const settings = landingpage && Array.isArray(landingpage)
-    ? landingpage.find(item => item.type === 'settings')
-    : null;
+  const settings = landingpage.find(item => item && item.type === 'settings');
 
   const title = settings?.seo_title || settings?.page_title || product?.nama || "Product Page";
   const description = settings?.meta_description || product?.deskripsi_singkat || "";

@@ -364,28 +364,94 @@ function ProductClient({ initialProductData, initialLandingPage }) {
 
   const sumber = searchParams.get("utm_sumber") || "website";
 
-  // Data State - Diisi dari Props Server (Source of Truth Utama)
-  // Karena page.js pakai key={kode_produk}, state ini akan di-reset otomatis saat ganti produk
-  const [productData, setProductData] = useState(initialProductData);
-  const [landingpage, setLandingpage] = useState(initialLandingPage);
+  // ✅ DATA PROCESSING HELPERS (Robust)
+  const processLandingPage = useCallback((rawLP) => {
+    let lpData = rawLP;
+    if (typeof lpData === 'string') {
+      try { lpData = JSON.parse(lpData); } catch (e) { lpData = []; }
+    }
+    if (!Array.isArray(lpData)) lpData = [];
+    return normalizeLandingpageData(lpData);
+  }, []);
+
+  const processProductData = useCallback((rawProduct) => {
+    if (!rawProduct) return null;
+
+    // Mapping Bundling
+    let bundlingData = [];
+    if (rawProduct.bundling_rel && Array.isArray(rawProduct.bundling_rel)) {
+      bundlingData = rawProduct.bundling_rel
+        .filter(item => item.status === 'A' || item.status === 1)
+        .map(item => ({
+          ...item,
+          id: item.id,
+          nama: item.nama,
+          harga: typeof item.harga === 'string' ? parseInt(item.harga) : item.harga
+        }));
+    } else if (rawProduct.bundling) {
+      if (typeof rawProduct.bundling === 'string') {
+        try { bundlingData = JSON.parse(rawProduct.bundling); } catch (e) { bundlingData = []; }
+      } else if (Array.isArray(rawProduct.bundling)) {
+        bundlingData = rawProduct.bundling;
+      }
+    }
+
+    return {
+      ...rawProduct,
+      isBundling: bundlingData && bundlingData.length > 0,
+      bundling: bundlingData,
+    };
+  }, []);
+
+  const [productData, setProductData] = useState(() => processProductData(initialProductData));
+  const [landingpage, setLandingpage] = useState(() => processLandingPage(initialLandingPage));
   const [loading, setLoading] = useState(!initialProductData);
   const [testimoniIndices, setTestimoniIndices] = useState({});
 
   // Sinkronisasi data jika props berubah (sebagai fail-safe)
   useEffect(() => {
-    if (initialProductData) setProductData(initialProductData);
-    if (initialLandingPage) setLandingpage(initialLandingPage);
-    if (initialProductData) setLoading(false);
-  }, [initialProductData, initialLandingPage]);
+    if (initialProductData) {
+      setProductData(processProductData(initialProductData));
+      setLoading(false);
+    }
+    if (initialLandingPage) {
+      setLandingpage(processLandingPage(initialLandingPage));
+    }
+  }, [initialProductData, initialLandingPage, processProductData, processLandingPage]);
+
+  // ✅ AUTO-FETCH FALLBACK: Jika data dari server kosong, coba fetch di client
+  useEffect(() => {
+    if (!productData) {
+      const fetchFreshData = async () => {
+        try {
+          setLoading(true);
+          const timestamp = new Date().getTime();
+          const res = await fetch(`/api/landing/${kode_produk}?t=${timestamp}`, {
+            cache: 'no-store'
+          });
+          const result = await res.json();
+          if (result.success) {
+            setProductData(processProductData(result.data));
+            setLandingpage(processLandingPage(result.landingpage));
+          }
+        } catch (e) {
+          console.error('[CLIENT-FALLBACK] Gagal fetch data:', e);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchFreshData();
+    }
+  }, [productData, kode_produk, processProductData, processLandingPage]);
+
+  // ✅ Derived State
+  const isBundling = productData?.isBundling || false;
 
   // ✅ LIVE SYNC: Dengerin sinyal dari tab Edit
   useEffect(() => {
-    // Fungsi untuk fetch ulang data paling baru secara manual (tanpa Router Refresh)
     const refreshData = async () => {
       try {
         console.log('[LIVE-SYNC] Mendapat sinyal update, mengambil data terbaru...');
-
-        // 🔥 CACHE BUSTER di Live Sync juga
         const timestamp = new Date().getTime();
         const res = await fetch(`/api/landing/${kode_produk}?t=${timestamp}`, {
           cache: 'no-store',
@@ -398,12 +464,10 @@ function ProductClient({ initialProductData, initialLandingPage }) {
         const result = await res.json();
 
         if (result.success) {
-          // Update state internal dengan data paling fresh
-          setProductData(result.data);
-          setLandingpage(result.landingpage);
+          setProductData(processProductData(result.data));
+          setLandingpage(processLandingPage(result.landingpage));
           console.log('[LIVE-SYNC] Data berhasil di-update secara instan di browser!');
         } else {
-          // Fallback reload hanya jika benar-benar gagal total
           window.location.reload();
         }
       } catch (e) {
@@ -421,7 +485,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
       };
       return () => bc.close();
     } catch (e) { }
-  }, [kode_produk]);
+  }, [kode_produk, processLandingPage, processProductData]);
 
   // -- HOOKS INTEGRATION --
 
@@ -2264,7 +2328,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
 
   // ✅ MOVED UP: Derived state and hooks MUST be before any conditional returns
   const settings = landingpage && Array.isArray(landingpage)
-    ? landingpage.find(item => item.type === 'settings')
+    ? landingpage.find(item => item && item.type === 'settings')
     : null;
 
   const logoUrl = buildImageUrl(settings?.logo) || '/assets/logo.png';
@@ -2452,8 +2516,25 @@ function ProductClient({ initialProductData, initialLandingPage }) {
     };
   }, [backgroundColor, kode_produk]);
 
-  // ✅ Loading indicator - Return NULL for clean loading state
-  if (loading) return null;
+  // ✅ Loading indicator - Tampilkan pesan memuat daripada null agar tidak blank
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        background: backgroundColor || '#ffffff',
+        fontFamily: 'sans-serif',
+        color: '#666'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div className="loading-spinner" style={{ marginBottom: '10px' }}></div>
+          <p>Memuat produk...</p>
+        </div>
+      </div>
+    );
+  }
 
   // ✅ Jika tidak ada productData setelah loading selesai, tampilkan notifikasi
   if (!productData) {
@@ -2468,7 +2549,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
           gap: '1rem'
         }}>
           <h2>Produk tidak ditemukan</h2>
-          <p>Produk dengan kode "{kode_produk}" tidak ditemukan.</p>
+          <p>{`Produk dengan kode "${kode_produk}" tidak ditemukan.`}</p>
         </div>
       </div>
     );
