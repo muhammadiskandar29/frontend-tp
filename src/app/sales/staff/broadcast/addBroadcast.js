@@ -17,7 +17,7 @@ const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
 // Status Order Mapping
 const STATUS_ORDER_MAP = {
   "1": "Proses",
-  "2": "Sukses",
+  "2": "Processing",
   "3": "Failed",
   "4": "Upselling",
   "N": "Dihapus",

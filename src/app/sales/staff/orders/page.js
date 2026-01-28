@@ -48,7 +48,7 @@ const STATUS_PEMBAYARAN_MAP = {
 
 const STATUS_ORDER_MAP = {
   "1": { label: "Pending", class: "pending" },
-  "2": { label: "Success", class: "success" },
+  "2": { label: "Processing", class: "success" },
   "3": { label: "Failed", class: "failed" },
   "4": { label: "Completed", class: "completed" },
   "N": { label: "Deleted", class: "deleted" },

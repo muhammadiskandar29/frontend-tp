@@ -58,7 +58,7 @@ export default function Dashboard() {
   // Status mapping matching orders page
   const STATUS_ORDER_MAP = {
     "1": { label: "Proses", class: "proses", color: "warning" },
-    "2": { label: "Sukses", class: "sukses", color: "success" },
+    "2": { label: "Processing", class: "sukses", color: "success" },
     "3": { label: "Failed", class: "failed", color: "danger" },
     "4": { label: "Upselling", class: "upselling", color: "info" },
     "N": { label: "Dihapus", class: "dihapus", color: "secondary" },
