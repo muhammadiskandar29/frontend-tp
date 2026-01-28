@@ -419,7 +419,7 @@ export default function AddOrders({ onClose, onAdd }) {
       ongkir: String(parseCurrency(formData.ongkir) || "0"),
       total_harga: String(parseCurrency(formData.total_harga) || "0"),
       status_pembayaran: formData.status_pembayaran === 4 ? 4 : (formData.status_pembayaran === null ? null : 0),
-      bundling: formData.bundling || null,
+      bundling: formData.bundling ? String(formData.bundling) : null,
     };
 
     console.log("[ADD_ORDERS] Payload sebelum kirim:", JSON.stringify(payload, null, 2));
