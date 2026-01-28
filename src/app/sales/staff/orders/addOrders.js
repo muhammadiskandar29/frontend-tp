@@ -308,7 +308,7 @@ export default function AddOrders({ onClose, onAdd }) {
     setFormData((prev) => ({
       ...prev,
       produk: prod.id,
-      bundling_id: "", // Reset bundling when product changes
+      bundling: "", // Reset bundling when product changes
       harga: hargaValue ? formatCurrency(hargaValue) : "",
       total_harga: (hargaValue + ongkirValue) > 0 ? formatCurrency(hargaValue + ongkirValue) : "",
     }));
@@ -785,24 +785,43 @@ export default function AddOrders({ onClose, onAdd }) {
 
                 {/* Produk (ID) removed from display, but retained in state */}
 
-                {selectedProduct && selectedProduct.bundling_rel && selectedProduct.bundling_rel.length > 0 && (
-                  <label className="orders-field">
-                    Pilih Bundling (Opsional)
-                    <select
-                      name="bundling"
-                      value={formData.bundling}
-                      onChange={handleChange}
-                      style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }}
-                    >
-                      <option value="">-- Tanpa Bundling --</option>
-                      {selectedProduct.bundling_rel.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.nama_bundling || b.info_bundling || `Bundle #${b.id}`}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                )}
+                {/* Bundling Selection */}
+                {(() => {
+                  if (!selectedProduct) return null;
+
+                  // Extract bundling list (handling both relation and JSON string)
+                  let bundlingList = [];
+                  if (Array.isArray(selectedProduct.bundling_rel) && selectedProduct.bundling_rel.length > 0) {
+                    bundlingList = selectedProduct.bundling_rel;
+                  } else if (selectedProduct.bundling) {
+                    if (typeof selectedProduct.bundling === 'string') {
+                      try { bundlingList = JSON.parse(selectedProduct.bundling); } catch (e) { bundlingList = []; }
+                    } else if (Array.isArray(selectedProduct.bundling)) {
+                      bundlingList = selectedProduct.bundling;
+                    }
+                  }
+
+                  if (bundlingList.length === 0) return null;
+
+                  return (
+                    <label className="orders-field">
+                      Pilih Bundling (Opsional)
+                      <select
+                        name="bundling"
+                        value={formData.bundling}
+                        onChange={handleChange}
+                        style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }}
+                      >
+                        <option value="">-- Tanpa Bundling --</option>
+                        {bundlingList.map((b) => (
+                          <option key={b.id || b.nama} value={b.id || b.nama}>
+                            {b.nama_bundling || b.info_bundling || b.nama || `Bundle #${b.id}`}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  );
+                })()}
 
                 <div className="orders-dual-grid">
                   <label className="orders-field">
