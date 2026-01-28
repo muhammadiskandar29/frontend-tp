@@ -281,7 +281,12 @@ export default function ViewOrders({ order, onClose }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                 <div>
                   <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem' }}>Produk</h4>
-                  <p style={{ fontSize: '1rem', fontWeight: 500, color: '#1e293b' }}>{order.produk_rel?.nama || "-"}</p>
+                  <p style={{ fontSize: '1rem', fontWeight: 500, color: '#1e293b', marginBottom: order.bundling_rel ? '0.25rem' : '0' }}>{order.produk_rel?.nama || "-"}</p>
+                  {order.bundling_rel && (
+                    <p style={{ fontSize: '0.875rem', color: '#64748b', fontStyle: 'italic' }}>
+                      Paket: {order.bundling_rel.nama}
+                    </p>
+                  )}
 
                   <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem', marginTop: '1.5rem' }}>Status Order</h4>
                   {(() => {
