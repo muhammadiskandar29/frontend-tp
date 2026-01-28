@@ -1478,13 +1478,6 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                           type="button"
                           onClick={() => {
                             setSelectedBundling(index);
-                            // Update harga produk berdasarkan bundling yang dipilih
-                            if (productData) {
-                              setProductData(prev => ({
-                                ...prev,
-                                harga: item.harga || prev.harga
-                              }));
-                            }
                           }}
                           style={{
                             flex: "1 1 calc(33.333% - 8px)",
@@ -1920,7 +1913,7 @@ function ProductClient({ initialProductData, initialLandingPage }) {
                       <div className="rincian-pesanan-name">{productData?.nama || "Nama Produk"}</div>
                     </div>
                     <div className="rincian-pesanan-price">
-                      Rp {formatPrice(productData?.harga || 0)}
+                      Rp {formatPrice(basePrice)}
                     </div>
                   </div>
                   {isKategoriBuku() && ongkir > 0 && (

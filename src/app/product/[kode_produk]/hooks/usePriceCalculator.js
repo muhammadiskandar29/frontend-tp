@@ -35,12 +35,23 @@ export function usePriceCalculator(productData, ongkir, selectedBundling) {
             return { basePrice: 0, totalPrice: 0 };
         }
 
-        let basePrice = parsePrice(productData.harga);
-
-        // Override harga jika bundling dipilih
         const bundlingData = productData?.bundling && Array.isArray(productData.bundling) ? productData.bundling : [];
-        if (selectedBundling !== null && bundlingData[selectedBundling]) {
-            basePrice = parsePrice(bundlingData[selectedBundling].harga || productData.harga);
+        const isBundling = bundlingData.length > 0;
+
+        let basePrice = 0;
+
+        // Logic: Jika ada bundling, harga diambil dari bundling yang dipilih.
+        // Jika tidak ada bundling, ambil dari harga atau harga_asli.
+        if (isBundling) {
+            if (selectedBundling !== null && bundlingData[selectedBundling]) {
+                basePrice = parsePrice(bundlingData[selectedBundling].harga);
+            } else {
+                // Default 0 jika bundling belum dipilih (meminta user memilih)
+                basePrice = 0;
+            }
+        } else {
+            // Bukan produk bundling, gunakan harga atau harga_asli
+            basePrice = parsePrice(productData.harga || productData.harga_asli);
         }
 
         // Hitung shipping cost logic
