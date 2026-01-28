@@ -1,6 +1,6 @@
 "use client";
 
-export default function StatsSection({ stats, isLoading }) {
+export default function StatsSection({ stats, isLoading, onStatClick }) {
   const getIcon = (id) => {
     switch (id) {
       case "total":
@@ -32,7 +32,12 @@ export default function StatsSection({ stats, isLoading }) {
 
       <div className="stats-grid">
         {stats.map((stat) => (
-          <div key={stat.id} className="stat-card">
+          <div
+            key={stat.id}
+            className="stat-card"
+            onClick={() => onStatClick && onStatClick(stat.id)}
+            style={{ cursor: onStatClick ? 'pointer' : 'default' }}
+          >
             <div className={`stat-card__icon-wrapper icon-${stat.id}`}>
               <div className="stat-icon">{getIcon(stat.id)}</div>
             </div>

@@ -10,6 +10,7 @@ import OrdersSection from "./components/OrdersSection";
 import ProductsSection from "./components/ProductsSection";
 import QuickActions from "./components/QuickActions";
 import BonusArticlesCard from "./components/BonusArticlesCard";
+import UnpaidOrdersModal from "./components/UnpaidOrdersModal";
 import { useDashboardData } from "./hooks/useDashboardData";
 import { useProducts } from "./hooks/useProducts";
 import { getCustomerSession } from "@/lib/customerAuth";
@@ -19,6 +20,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateModalReason, setUpdateModalReason] = useState("password");
+  const [showUnpaidModal, setShowUnpaidModal] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
 
   const {
@@ -327,7 +329,25 @@ export default function DashboardPage() {
         />
 
         {/* Stats Section (Ringkasan) */}
-        <StatsSection stats={stats} isLoading={dashboardLoading} />
+        <StatsSection
+          stats={stats}
+          isLoading={dashboardLoading}
+          onStatClick={(id) => {
+            if (id === "total") setShowUnpaidModal(true);
+          }}
+        />
+
+        {/* Unpaid Orders Modal */}
+        <UnpaidOrdersModal
+          isOpen={showUnpaidModal}
+          onClose={() => setShowUnpaidModal(false)}
+          orders={activeOrders.filter(o => !o.isPaid)}
+          onPaymentAction={(order) => {
+            setShowUnpaidModal(false);
+            handleContinuePayment(order);
+          }}
+          isPaymentLoading={paymentLoading}
+        />
 
         {/* Exclusive Bonus Articles Card */}
         <BonusArticlesCard articles={articles} isLoading={dashboardLoading} />
