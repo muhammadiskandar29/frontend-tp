@@ -299,21 +299,46 @@ export default function AddOrders({ onClose, onAdd }) {
   };
 
   // === Pilih Produk ===
-  const handleSelectProduct = (prod) => {
-    const hargaValue = Number(prod.harga) || 0;
-    const ongkirValue = parseCurrency(formData.ongkir || "");
+  const handleSelectProduct = async (prod) => {
+    setLoading(true);
+    try {
+      // Fetch full product details to ensure we have bundling_rel and other details
+      const res = await api(`/sales/produk/${prod.id}`, { method: "GET", disableToast: true });
+      const fullProd = res?.success ? (Array.isArray(res.data) ? res.data[0] : res.data) : prod;
 
-    setSelectedProduct(prod);
+      const currentProd = fullProd || prod;
+      const hargaValue = Number(currentProd.harga) || 0;
+      const ongkirValue = parseCurrency(formData.ongkir || "");
 
-    setFormData((prev) => ({
-      ...prev,
-      produk: prod.id,
-      bundling: "", // Reset bundling when product changes
-      harga: hargaValue ? formatCurrency(hargaValue) : "",
-      total_harga: (hargaValue + ongkirValue) > 0 ? formatCurrency(hargaValue + ongkirValue) : "",
-    }));
-    setProductSearch(prod.nama);
-    setProductResults([]);
+      setSelectedProduct(currentProd);
+
+      setFormData((prev) => ({
+        ...prev,
+        produk: currentProd.id,
+        bundling: "", // Reset bundling when product changes
+        harga: hargaValue ? formatCurrency(hargaValue) : "",
+        total_harga: (hargaValue + ongkirValue) > 0 ? formatCurrency(hargaValue + ongkirValue) : "",
+      }));
+      setProductSearch(currentProd.nama);
+      setProductResults([]);
+    } catch (err) {
+      console.error("Error fetching product details:", err);
+      // Fallback to basic product data if fetch fails
+      const hargaValue = Number(prod.harga) || 0;
+      const ongkirValue = parseCurrency(formData.ongkir || "");
+      setSelectedProduct(prod);
+      setFormData((prev) => ({
+        ...prev,
+        produk: prod.id,
+        bundling: "",
+        harga: hargaValue ? formatCurrency(hargaValue) : "",
+        total_harga: (hargaValue + ongkirValue) > 0 ? formatCurrency(hargaValue + ongkirValue) : "",
+      }));
+      setProductSearch(prod.nama);
+      setProductResults([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // === Handle Change ===
