@@ -281,13 +281,33 @@ export default function ViewOrders({ order, onClose }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                 <div>
                   <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem' }}>Produk</h4>
-                  <p style={{ fontSize: '1rem', fontWeight: 500, color: '#1e293b', marginBottom: '0.25rem' }}>{order.produk_rel?.nama || "-"}</p>
-                  {order.bundling_rel && (
-                    <p style={{ fontSize: '0.875rem', color: '#64748b', fontStyle: 'italic', marginBottom: '1.5rem' }}>
-                      Paket: {order.bundling_rel.nama}
-                    </p>
-                  )}
-                  {!order.bundling_rel && <div style={{ marginBottom: '1.5rem' }}></div>}
+                  <p style={{ fontSize: '1rem', fontWeight: 500, color: '#1e293b', marginBottom: '0.25rem' }}>{order.produk_rel?.nama || order.produk_nama || "-"}</p>
+
+                  {(() => {
+                    const bundling = order.bundling_rel;
+                    if (!bundling) return <div style={{ marginBottom: '1.5rem' }}></div>;
+
+                    const bundlingName = Array.isArray(bundling)
+                      ? bundling[0]?.nama
+                      : (typeof bundling === 'object' ? bundling.nama : null);
+
+                    if (!bundlingName) return <div style={{ marginBottom: '1.5rem' }}></div>;
+
+                    return (
+                      <p style={{
+                        fontSize: '0.9rem',
+                        color: '#475569',
+                        fontStyle: 'italic',
+                        marginBottom: '1.5rem',
+                        background: '#f1f5f9',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        width: 'fit-content'
+                      }}>
+                        Paket: {bundlingName}
+                      </p>
+                    );
+                  })()}
 
                   <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem' }}>Status Order</h4>
                   {(() => {
