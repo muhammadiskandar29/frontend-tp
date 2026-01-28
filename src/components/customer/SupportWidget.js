@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, X, Send, User, Phone, MessageSquare } from 'lucide-react';
 
 export default function SupportWidget({ customerInfo }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,12 +11,12 @@ export default function SupportWidget({ customerInfo }) {
   });
 
   // Target WhatsApp Number (Support Central)
-  const SUPPORT_WA = "6281234567890"; // Ganti dengan nomor CS yang sesuai
+  const SUPPORT_WA = "6281234567890"; // Ganti dengan nomor CS Anda
 
   useEffect(() => {
     if (customerInfo) {
       setFormData({
-        nama: customerInfo.nama || customerInfo.nama_lengkap || "",
+        nama: customerInfo.nama || customerInfo.nama_lengkap || customerInfo.name || "",
         wa: customerInfo.wa || ""
       });
     }
@@ -38,141 +37,121 @@ export default function SupportWidget({ customerInfo }) {
   };
 
   return (
-    <div className="support-widget-container">
-      {/* Floating Action Button */}
+    <div className="support-widget-root">
+      {/* Floating Action Button (FAB) */}
       {!isOpen && (
         <button
-          className="support-fab"
+          className="support-fab-new"
           onClick={() => setIsOpen(true)}
-          aria-label="Butuh Bantuan"
         >
-          <div className="fab-icon-wrapper">
-            <MessageCircle size={24} />
-            <span className="fab-text">Butuh Bantuan?</span>
-          </div>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span className="fab-label">Butuh Bantuan?</span>
         </button>
       )}
 
-      {/* Small Support Modal/Popover */}
+      {/* Support Popover */}
       {isOpen && (
-        <div className="support-popover">
-          <div className="popover-header">
-            <div className="header-icon-bg">
-              <MessageSquare size={18} />
+        <div className="support-box">
+          <div className="support-box-header">
+            <div className="header-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+              </svg>
             </div>
-            <div className="header-text">
-              <h4>Customer Support</h4>
-              <p>Kami siap membantu Anda</p>
+            <div className="header-titles">
+              <h3>Customer Support</h3>
+              <span>Kami siap membantu Anda</span>
             </div>
-            <button className="close-popover" onClick={() => setIsOpen(false)}>
-              <X size={18} />
+            <button className="btn-close" onClick={() => setIsOpen(false)}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
             </button>
           </div>
 
-          <form className="popover-body" onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>
-                <User size={14} /> Nama Anda
-              </label>
-              <input
-                type="text"
-                value={formData.nama}
-                readOnly
-                className="readonly-input"
-              />
+          <form className="support-box-body" onSubmit={handleSubmit}>
+            <div className="input-group">
+              <label>Nama Anda</label>
+              <input type="text" value={formData.nama} readOnly className="input-readonly" />
             </div>
 
-            <div className="form-group">
-              <label>
-                <Phone size={14} /> No. WhatsApp
-              </label>
-              <input
-                type="text"
-                value={formData.wa}
-                readOnly
-                className="readonly-input"
-              />
+            <div className="input-group">
+              <label>No. WhatsApp</label>
+              <input type="text" value={formData.wa} readOnly className="input-readonly" />
             </div>
 
-            <div className="form-group">
-              <label>
-                <Send size={14} /> Isi Pesan
-              </label>
+            <div className="input-group">
+              <label>Isi Pesan Bantuan</label>
               <textarea
-                placeholder="Ceritakan masalah atau kendala Anda..."
+                placeholder="Tuliskan kendala Anda di sini..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 required
-                rows={3}
               />
             </div>
 
-            <button type="submit" className="submit-support-btn">
-              <span>Kirim ke WhatsApp</span>
-              <Send size={16} />
+            <button type="submit" className="btn-send-wa">
+              <span>Kirim Pesan</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
             </button>
           </form>
-
-          <div className="popover-footer">
-            Respon rata-rata: &lt; 15 Menit
-          </div>
+          <div className="support-box-footer">Respon rata-rata &lt; 15 menit</div>
         </div>
       )}
 
-      <style jsx>{`
-        .support-widget-container {
+      <style jsx global>{`
+        .support-widget-root {
           position: fixed;
-          bottom: 40px; /* Turunkan sedikit agar tidak terlalu tinggi */
+          bottom: 30px;
           right: 30px;
-          z-index: 9999; /* Maksimalkan z-index agar di atas segalanya */
+          z-index: 999999;
+          font-family: 'Inter', sans-serif;
           pointer-events: auto;
-          font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
 
-        /* FAB Button */
-        .support-fab {
+        .support-fab-new {
           background: #f1a124;
           color: white;
           border: none;
-          padding: 12px 20px;
+          padding: 14px 24px;
           border-radius: 50px;
-          box-shadow: 0 10px 25px rgba(241, 161, 36, 0.4);
+          display: flex;
+          align-items: center;
+          gap: 12px;
           cursor: pointer;
+          box-shadow: 0 10px 30px rgba(241, 161, 36, 0.4);
           transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-          display: flex;
-          align-items: center;
-          gap: 10px;
         }
 
-        .support-fab:hover {
-          transform: translateY(-5px) scale(1.02);
-          box-shadow: 0 15px 30px rgba(241, 161, 36, 0.5);
+        .support-fab-new:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 15px 35px rgba(241, 161, 36, 0.5);
+          background: #e8911a;
         }
 
-        .fab-icon-wrapper {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .fab-text {
+        .fab-label {
           font-weight: 700;
-          font-size: 0.95rem;
-          letter-spacing: -0.01em;
+          font-size: 15px;
+          white-space: nowrap;
         }
 
-        /* Popover Form */
-        .support-popover {
+        .support-box {
           width: 320px;
           background: white;
           border-radius: 20px;
-          box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+          box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
           border: 1px solid #f1f5f9;
           overflow: hidden;
-          animation: popIn 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+          animation: supportPopIn 0.3s cubic-bezier(0.19, 1, 0.22, 1);
         }
 
-        .popover-header {
+        .support-box-header {
           background: #0f172a;
           color: white;
           padding: 20px;
@@ -182,146 +161,100 @@ export default function SupportWidget({ customerInfo }) {
           position: relative;
         }
 
-        .header-icon-bg {
+        .header-icon {
           background: rgba(241, 161, 36, 0.2);
+          color: #f1a124;
           padding: 8px;
           border-radius: 10px;
-          color: #f1a124;
         }
 
-        .header-text h4 {
-          margin: 0;
-          font-size: 0.9375rem;
-          font-weight: 700;
-        }
+        .header-titles h3 { margin: 0; font-size: 15px; font-weight: 700; }
+        .header-titles span { font-size: 12px; opacity: 0.7; }
 
-        .header-text p {
-          margin: 0;
-          font-size: 0.75rem;
-          opacity: 0.7;
-        }
-
-        .close-popover {
+        .btn-close {
           position: absolute;
-          top: 15px;
           right: 15px;
+          top: 15px;
           background: transparent;
           border: none;
           color: white;
           opacity: 0.5;
           cursor: pointer;
-          transition: opacity 0.2s;
         }
 
-        .close-popover:hover {
-          opacity: 1;
-        }
-
-        .popover-body {
-          padding: 20px;
+        .support-box-body {
+          padding: 24px;
           display: flex;
           flex-direction: column;
           gap: 16px;
         }
 
-        .form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+        .input-group label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; }
 
-        .form-group label {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: #64748b;
-          text-transform: uppercase;
-          letter-spacing: 0.02em;
-        }
-
-        .readonly-input {
+        .input-readonly {
           background: #f8fafc;
           border: 1px solid #e2e8f0;
-          padding: 10px 12px;
+          padding: 12px;
           border-radius: 10px;
-          font-size: 0.875rem;
           color: #1e293b;
-          font-weight: 500;
-          cursor: not-allowed;
+          font-weight: 600;
+          font-size: 14px;
         }
 
         textarea {
           border: 1.5px solid #e2e8f0;
           border-radius: 10px;
           padding: 12px;
-          font-size: 0.9375rem;
+          height: 100px;
           font-family: inherit;
+          font-size: 14px;
           resize: none;
-          transition: all 0.2s;
-          color: #1e293b;
         }
 
         textarea:focus {
           outline: none;
           border-color: #f1a124;
-          box-shadow: 0 0 0 4px rgba(241, 161, 36, 0.1);
           background: #fffcf5;
         }
 
-        .submit-support-btn {
+        .btn-send-wa {
           background: #0f172a;
           color: white;
           border: none;
-          padding: 14px;
-          border-radius: 12px;
+          padding: 16px;
+          border-radius: 14px;
           font-weight: 700;
-          font-size: 0.875rem;
-          cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 10px;
+          gap: 12px;
+          cursor: pointer;
           transition: all 0.2s;
-          margin-top: 4px;
         }
 
-        .submit-support-btn:hover {
+        .btn-send-wa:hover {
           background: #1e293b;
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
         }
 
-        .popover-footer {
+        .support-box-footer {
           padding: 12px;
           text-align: center;
-          font-size: 0.7rem;
+          font-size: 11px;
           color: #94a3b8;
-          background: #f8fafc;
           border-top: 1px solid #f1f5f9;
+          background: #fafafa;
         }
 
-        @keyframes popIn {
-          from { 
-            opacity: 0; 
-            transform: scale(0.9) translateY(20px);
-            transform-origin: bottom right;
-          }
-          to { 
-            opacity: 1; 
-            transform: scale(1) translateY(0);
-          }
+        @keyframes supportPopIn {
+          from { opacity: 0; transform: scale(0.95) translateY(20px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
         @media (max-width: 640px) {
-          .support-widget-container {
-            right: 20px;
-            bottom: 80px;
-          }
-          .support-popover {
-            width: calc(100vw - 40px);
-          }
+          .support-widget-root { right: 20px; bottom: 20px; }
+          .support-box { width: calc(100vw - 40px); }
         }
       `}</style>
     </div>
