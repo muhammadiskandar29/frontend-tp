@@ -281,17 +281,18 @@ export default function ViewOrders({ order, onClose }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                 <div>
                   <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem' }}>Produk</h4>
-                  <p style={{ fontSize: '1rem', fontWeight: 500, color: '#1e293b', marginBottom: order.bundling_rel ? '0.25rem' : '0' }}>{order.produk_rel?.nama || "-"}</p>
+                  <p style={{ fontSize: '1rem', fontWeight: 500, color: '#1e293b', marginBottom: '0.25rem' }}>{order.produk_rel?.nama || "-"}</p>
                   {order.bundling_rel && (
-                    <p style={{ fontSize: '0.875rem', color: '#64748b', fontStyle: 'italic' }}>
+                    <p style={{ fontSize: '0.875rem', color: '#64748b', fontStyle: 'italic', marginBottom: '1.5rem' }}>
                       Paket: {order.bundling_rel.nama}
                     </p>
                   )}
+                  {!order.bundling_rel && <div style={{ marginBottom: '1.5rem' }}></div>}
 
-                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem', marginTop: '1.5rem' }}>Status Order</h4>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem' }}>Status Order</h4>
                   {(() => {
-                    const statusVal = String(order.status);
-                    const statusInfo = STATUS_ORDER_MAP[statusVal] || { label: "Pending", class: "pending" };
+                    const statusVal = String(order.status_order ?? order.status ?? "1");
+                    const statusInfo = STATUS_ORDER_MAP[statusVal] || STATUS_ORDER_MAP["1"];
                     return (
                       <span className={`orders-status-badge orders-status-badge--${statusInfo.class}`}>
                         {statusInfo.label.toUpperCase()}
@@ -325,31 +326,7 @@ export default function ViewOrders({ order, onClose }) {
                 </div>
               </div>
 
-              {/* ACTION BUTTONS */}
-              <div style={{ marginTop: "2rem", paddingTop: "1.5rem", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end" }}>
-                <button
-                  onClick={() => setShowUpdate(true)}
-                  className="orders-btn-update"
-                  style={{
-                    padding: "0.75rem 1.5rem",
-                    background: "linear-gradient(135deg, #ff6c00 0%, #ee6000 100%)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontWeight: "600",
-                    fontSize: "0.95rem",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    boxShadow: "0 4px 12px rgba(255, 108, 0, 0.2)",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  <i className="pi pi-pencil"></i>
-                  Update / Konfirmasi
-                </button>
-              </div>
+              {/* ACTION BUTTONS REMOVED FROM DETAIL TAB */}
             </div>
           )}
 
