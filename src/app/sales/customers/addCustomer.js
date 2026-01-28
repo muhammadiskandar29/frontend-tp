@@ -11,6 +11,7 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     nama: "",
     nama_panggilan: "",
+    sapaan: "",
     email: "",
     wa: "",
     instagram: "",
@@ -171,6 +172,18 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
         <div className="modal-body">
           <form onSubmit={handleSubmit} className="form-grid">
             <div className="form-group">
+              <label>Sapaan</label>
+              <select name="sapaan" value={formData.sapaan} onChange={handleChange}>
+                <option value="">Pilih Sapaan</option>
+                <option value="Mas">Mas</option>
+                <option value="Mba">Mba</option>
+                <option value="Pak">Pak</option>
+                <option value="Bu">Bu</option>
+                <option value="Kak">Kak</option>
+              </select>
+            </div>
+
+            <div className="form-group">
               <label>Nama</label>
               <input name="nama" value={formData.nama} onChange={handleChange} required />
             </div>
@@ -292,6 +305,7 @@ export default function AddCustomerModal({ onClose, onSuccess }) {
               <label>Pendapatan per Bulan</label>
               <select name="pendapatan_bln" value={formData.pendapatan_bln} onChange={handleChange}>
                 <option value="">Pilih Range Pendapatan</option>
+                <option value="1-10jt">1 - 10 Juta</option>
                 <option value="10-20jt">10 - 20 Juta</option>
                 <option value="20-30jt">20 - 30 Juta</option>
                 <option value="30-40jt">30 - 40 Juta</option>
