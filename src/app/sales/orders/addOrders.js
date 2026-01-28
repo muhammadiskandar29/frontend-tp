@@ -450,14 +450,23 @@ export default function AddOrders({ onClose, onAdd }) {
     // }
 
     const payload = {
-      ...formData,
-      alamat_customer: finalAlamat,
-      alamat: finalAlamat, // Same as customer address
+      nama: formData.nama,
+      wa: formData.wa,
+      email: formData.email,
+      alamat: finalAlamat || null,
+      provinsi: formData.provinsi || null,
+      kabupaten: formData.kabupaten || null,
+      kecamatan: formData.kecamatan || null,
+      kode_pos: formData.kode_pos || null,
+      produk: parseInt(formData.produk, 10),
       harga: String(parseCurrency(formData.harga) || "0"),
       ongkir: String(parseCurrency(formData.ongkir) || "0"),
       total_harga: String(parseCurrency(formData.total_harga) || "0"),
-      status_pembayaran: formData.status_pembayaran === 4 ? 4 : (formData.status_pembayaran === null ? null : 0),
+      metode_bayar: "va",
+      sumber: formData.sumber || "manual",
+      custom_value: [],
       bundling: formData.bundling ? String(formData.bundling) : null,
+      status_pembayaran: formData.status_pembayaran === 4 ? 4 : (formData.status_pembayaran === null ? null : 0),
     };
 
     console.log("[ADD_ORDERS] Payload sebelum kirim:", JSON.stringify(payload, null, 2));

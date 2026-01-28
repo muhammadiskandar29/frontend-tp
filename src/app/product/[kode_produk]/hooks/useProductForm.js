@@ -106,7 +106,7 @@ export function useProductForm({
                 nama: customerForm.nama,
                 wa: customerForm.wa,
                 email: customerForm.email,
-                alamat: '',
+                alamat: alamatLengkap || null,
                 provinsi: formWilayah.provinsi || null,
                 kabupaten: formWilayah.kabupaten || null,
                 kecamatan: formWilayah.kecamatan || null,
@@ -117,10 +117,8 @@ export function useProductForm({
                 total_harga: String(totalHarga),
                 metode_bayar: paymentMethod,
                 sumber: sumber || 'website',
-                custom_value: Array.isArray(customerForm.custom_value)
-                    ? customerForm.custom_value
-                    : (customerForm.custom_value ? [customerForm.custom_value] : []),
-                ...(bundlingId ? { bundling: String(bundlingId) } : {}),
+                custom_value: Array.isArray(customerForm.custom_value) ? customerForm.custom_value : [],
+                bundling: bundlingId !== null && bundlingId !== undefined ? String(bundlingId) : null,
             };
 
             const response = await fetch("/api/order", {
