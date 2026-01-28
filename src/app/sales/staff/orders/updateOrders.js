@@ -574,6 +574,8 @@ export default function UpdateOrders({ order, onClose, onSave }) {
                     <option value="whatsapp">WhatsApp</option>
                     <option value="sales">Sales</option>
                     <option value="event">Event</option>
+                    <option value="zoom">Zoom</option>
+                    <option value="offline">Offline</option>
                   </select>
                 </label>
               </div>
