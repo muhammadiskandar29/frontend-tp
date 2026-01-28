@@ -118,7 +118,7 @@ export function useProductForm({
                 metode_bayar: paymentMethod,
                 sumber: sumber || 'website',
                 custom_value: Array.isArray(customerForm.custom_value) ? customerForm.custom_value : [],
-                bundling: bundlingId !== null && bundlingId !== undefined ? String(bundlingId) : null,
+                bundling: bundlingId !== null && bundlingId !== undefined ? String(bundlingId) : "",
             };
 
             const response = await fetch("/api/order", {

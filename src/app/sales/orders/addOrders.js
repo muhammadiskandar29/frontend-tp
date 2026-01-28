@@ -465,7 +465,7 @@ export default function AddOrders({ onClose, onAdd }) {
       metode_bayar: "va",
       sumber: formData.sumber || "manual",
       custom_value: [],
-      bundling: formData.bundling ? String(formData.bundling) : null,
+      bundling: formData.bundling ? String(formData.bundling) : "",
       status_pembayaran: formData.status_pembayaran === 4 ? 4 : (formData.status_pembayaran === null ? null : 0),
     };
 
