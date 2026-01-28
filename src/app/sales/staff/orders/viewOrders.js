@@ -100,7 +100,10 @@ const getFollowupStatusBadge = (status) => {
   return { label: "Pending", className: "badge-warning" };
 };
 
-export default function ViewOrders({ order, onClose }) {
+export default function ViewOrders({ order: initialOrder, onClose }) {
+  const [order, setOrder] = useState(initialOrder);
+  const [loadingOrder, setLoadingOrder] = useState(false);
+
   if (!order) return null;
 
   const [activeTab, setActiveTab] = useState("detail");
@@ -112,6 +115,37 @@ export default function ViewOrders({ order, onClose }) {
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [logsError, setLogsError] = useState("");
   const [showUpdate, setShowUpdate] = useState(false);
+
+  // Fetch Full Order Details (to get bundling_rel if missing)
+  const fetchOrderDetails = useCallback(async () => {
+    if (!order?.id) return;
+    setLoadingOrder(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/sales/order/${order.id}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        // Handle if data is array or object
+        const fullOrder = Array.isArray(json.data) ? json.data[0] : json.data;
+        if (fullOrder) {
+          setOrder(fullOrder);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching full order:", err);
+    } finally {
+      setLoadingOrder(false);
+    }
+  }, [order?.id]);
+
+  useEffect(() => {
+    fetchOrderDetails();
+  }, [fetchOrderDetails]);
 
   // Payment History State
   const [paymentHistoryData, setPaymentHistoryData] = useState(null);
@@ -288,13 +322,13 @@ export default function ViewOrders({ order, onClose }) {
                     const b = order.bundling_rel;
                     const bName = b?.nama || (Array.isArray(b) && b[0]?.nama) || order.bundling_nama;
 
-                    if (!bName && !order.bundling) return <div style={{ marginBottom: '1.5rem' }}></div>;
+                    if (!bName && !order.bundling && !loadingOrder) return <div style={{ marginBottom: '1.5rem' }}></div>;
 
                     return (
                       <div style={{ marginBottom: '1.5rem' }}>
                         <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem' }}>Paket Bundling</h4>
                         <p style={{ fontSize: '1rem', fontWeight: 500, color: '#1e293b' }}>
-                          {bName || ("ID: " + order.bundling)}
+                          {bName || (loadingOrder ? "Memuat nama paket..." : ("ID: " + order.bundling))}
                         </p>
                       </div>
                     );
