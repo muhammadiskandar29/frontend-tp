@@ -8,7 +8,6 @@ import HeroSection from "./components/HeroSection";
 import StatsSection from "./components/StatsSection";
 import OrdersSection from "./components/OrdersSection";
 import ProductsSection from "./components/ProductsSection";
-import QuickActions from "./components/QuickActions";
 import BonusArticlesCard from "./components/BonusArticlesCard";
 import UnpaidOrdersModal from "./components/UnpaidOrdersModal";
 import { useDashboardData } from "./hooks/useDashboardData";

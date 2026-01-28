@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { getCustomerSession } from "@/lib/customerAuth";
+import SupportWidget from "./SupportWidget";
 import "@/styles/customer/cstdashboard.css";
 
 const navLinks = [
@@ -17,6 +18,7 @@ export default function CustomerLayout({ children }) {
   const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [customerInfo, setCustomerInfo] = useState(null);
+  const [fullUserInfo, setFullUserInfo] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
@@ -31,6 +33,7 @@ export default function CustomerLayout({ children }) {
 
     // Set customer info untuk ditampilkan di navbar
     if (session.user) {
+      setFullUserInfo(session.user);
       const customerName = session.user.nama_panggilan || session.user.nama || "User";
       setCustomerInfo({
         name: customerName,
@@ -196,6 +199,9 @@ export default function CustomerLayout({ children }) {
       </header>
 
       <main className="dashboard-content">{children}</main>
+
+      {/* Global Help Support Widget */}
+      <SupportWidget customerInfo={fullUserInfo} />
     </div>
   );
 }
