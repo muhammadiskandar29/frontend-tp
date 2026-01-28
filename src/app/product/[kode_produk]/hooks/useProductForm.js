@@ -47,18 +47,38 @@ export function useProductForm({
         setAlamatLengkap(parts.join(", "));
     }, [formWilayah]);
 
-    // Validation Logic (Now separate from price state)
-    const isFormValid = (isFisik, isBundling) => {
-        if (isBundling && selectedBundling === null) return "Silakan pilih paket produk terlebih dahulu";
+    // -- INTERNAL BUNDLING DATA --
+    const getBundlingList = () => {
+        if (!productData) return [];
+        // Prioritas data bundling_rel sesuai struktur backend
+        if (Array.isArray(productData.bundling_rel)) return productData.bundling_rel;
+
+        // Fallback ke field bundling (bisa JSON string atau Array)
+        if (productData.bundling) {
+            if (typeof productData.bundling === 'string') {
+                try { return JSON.parse(productData.bundling); } catch (e) { return []; }
+            }
+            if (Array.isArray(productData.bundling)) return productData.bundling;
+        }
+        return [];
+    };
+
+    const bundlingList = getBundlingList();
+    const hasBundling = bundlingList.length > 0;
+
+    // Validation Logic
+    const isFormValid = (isFisik) => {
+        // Jika produk memiliki paket, user WAJIB memilih salah satu
+        if (hasBundling && (selectedBundling === null || !bundlingList[selectedBundling])) {
+            return "Silakan pilih paket produk terlebih dahulu";
+        }
+
         if (!customerForm.nama || customerForm.nama.trim().length < 3) return "Nama harus diisi (minimal 3 karakter)";
 
-        // WA validation: assuming 10 digits minimum for user input (excluding '62' prefix)
-        // customerForm.wa starts with '62', so its length should be at least 12
         if (!customerForm.wa || customerForm.wa.replace(/\D/g, '').length < 12) {
             return "Nomor WhatsApp tidak valid (minimal 10 digit)";
         }
 
-        // Email validation regex (standard RFC 5322)
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!customerForm.email || !emailRegex.test(customerForm.email)) {
             return "Email tidak valid (harus berisi @ dan domain yang benar)";
@@ -78,16 +98,14 @@ export function useProductForm({
         return null; // Valid
     };
 
-    // Submit Logic - Now accepts calculated values explicitly
+    // Submit Logic
     const handleSubmit = async (calculatedPriceValues) => {
         const { totalHarga, hargaProduk, isKategoriBuku } = calculatedPriceValues;
 
         if (submitting) return;
 
-        const bundlingData = productData?.bundling || [];
-        const isBundling = bundlingData.length > 0;
-
-        const validationError = isFormValid(isKategoriBuku, isBundling);
+        // Gunakan fungsi isFormValid yang sudah diperbarui
+        const validationError = isFormValid(isKategoriBuku);
         if (validationError) {
             return toast.error(validationError);
         }
@@ -97,10 +115,9 @@ export function useProductForm({
         try {
             if (!productData) throw new Error("Data produk tidak available");
 
-            const bundlingData = productData.bundling || [];
-            const bundlingId = (selectedBundling !== null && bundlingData[selectedBundling])
-                ? (bundlingData[selectedBundling].id || null)
-                : null;
+            // Ambil ID asli dari objek dalam list bundling
+            const selectedBundlingItem = bundlingList[selectedBundling];
+            const bundlingId = selectedBundlingItem ? selectedBundlingItem.id : "";
 
             const payload = {
                 nama: customerForm.nama,
@@ -118,7 +135,7 @@ export function useProductForm({
                 metode_bayar: paymentMethod,
                 sumber: sumber || 'website',
                 custom_value: Array.isArray(customerForm.custom_value) ? customerForm.custom_value : [],
-                bundling: bundlingId !== null && bundlingId !== undefined ? String(bundlingId) : "",
+                bundling: String(bundlingId),
             };
 
             const response = await fetch("/api/order", {

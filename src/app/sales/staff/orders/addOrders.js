@@ -411,6 +411,21 @@ export default function AddOrders({ onClose, onAdd }) {
       return;
     }
 
+    // Extract bundling ID correctly if selected
+    let bundleId = "";
+    if (formData.bundling) {
+      // Find the ID from selectedProduct's bundling list
+      let bundlingList = [];
+      if (Array.isArray(selectedProduct?.bundling_rel)) bundlingList = selectedProduct.bundling_rel;
+      else if (selectedProduct?.bundling) {
+        if (typeof selectedProduct.bundling === 'string') {
+          try { bundlingList = JSON.parse(selectedProduct.bundling); } catch (e) { }
+        } else if (Array.isArray(selectedProduct.bundling)) bundlingList = selectedProduct.bundling;
+      }
+
+      bundleId = formData.bundling;
+    }
+
     const payload = {
       nama: formData.nama,
       wa: formData.wa,
@@ -427,7 +442,7 @@ export default function AddOrders({ onClose, onAdd }) {
       metode_bayar: "va",
       sumber: formData.sumber || "manual",
       custom_value: [],
-      bundling: formData.bundling ? String(formData.bundling) : "",
+      bundling: bundleId ? String(bundleId) : "",
       status_pembayaran: formData.status_pembayaran === 4 ? 4 : (formData.status_pembayaran === null ? null : 0),
     };
 
