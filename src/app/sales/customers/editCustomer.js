@@ -25,9 +25,10 @@ const formatTanggalLahirForInput = (tanggal) => {
 export default function EditCustomerModal({ customer, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     nama: customer.nama || "",
+    nama_panggilan: customer.nama_panggilan || "",
+    sapaan: customer.sapaan || "",
     email: customer.email || "",
     wa: customer.wa || "",
-    nama_panggilan: customer.nama_panggilan || "",
     instagram: customer.instagram?.replace(/^@/, "") || "",
     profesi: customer.profesi || "",
     pendapatan_bln: customer.pendapatan_bln || "",
@@ -199,6 +200,18 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
             {/* Primary Fields - Contact Information */}
             <div className="form-section">
               <div className="form-group form-group--primary">
+                <label>Sapaan</label>
+                <select name="sapaan" value={formData.sapaan} onChange={handleChange}>
+                  <option value="">Pilih Sapaan</option>
+                  <option value="Mas">Mas</option>
+                  <option value="Mba">Mba</option>
+                  <option value="Pak">Pak</option>
+                  <option value="Bu">Bu</option>
+                  <option value="Kak">Kak</option>
+                </select>
+              </div>
+
+              <div className="form-group form-group--primary">
                 <label>Nama</label>
                 <input name="nama" value={formData.nama} onChange={handleChange} required />
               </div>
@@ -255,6 +268,7 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }) {
                   onChange={handleChange}
                 >
                   <option value="">Pilih Range Pendapatan</option>
+                  <option value="1-10jt">1 - 10 Juta</option>
                   <option value="10-20jt">10 - 20 Juta</option>
                   <option value="20-30jt">20 - 30 Juta</option>
                   <option value="30-40jt">30 - 40 Juta</option>

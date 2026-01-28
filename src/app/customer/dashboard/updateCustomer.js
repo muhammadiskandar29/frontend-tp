@@ -37,6 +37,7 @@ import { getCustomerSession } from "@/lib/customerAuth";
 
 const initialFormState = {
   nama_panggilan: "",
+  sapaan: "",
   instagram: "",
   profesi: "",
   pendapatan_bln: "",
@@ -55,6 +56,20 @@ const SECTION_CONFIG = [
         name: "nama_panggilan",
         label: "Nama Panggilan",
         placeholder: "Masukkan nama panggilan",
+        required: true,
+      },
+      {
+        name: "sapaan",
+        label: "Sapaan",
+        type: "select",
+        options: [
+          { value: "", label: "Pilih Sapaan" },
+          { value: "Mas", label: "Mas" },
+          { value: "Mba", label: "Mba" },
+          { value: "Pak", label: "Pak" },
+          { value: "Bu", label: "Bu" },
+          { value: "Kak", label: "Kak" },
+        ],
         required: true,
       },
       {
@@ -81,6 +96,7 @@ const SECTION_CONFIG = [
         placeholder: "Pilih Range Pendapatan",
         options: [
           { value: "", label: "Pilih Range Pendapatan" },
+          { value: "1-10jt", label: "1 - 10 Juta" },
           { value: "10-20jt", label: "10 - 20 Juta" },
           { value: "20-30jt", label: "20 - 30 Juta" },
           { value: "30-40jt", label: "30 - 40 Juta" },
@@ -190,6 +206,7 @@ export default function UpdateCustomerModal({
         setFormData((prev) => ({
           ...prev,
           nama_panggilan: user.nama_panggilan || user.nama || prev.nama_panggilan,
+          sapaan: user.sapaan || prev.sapaan,
           instagram: user.instagram || prev.instagram,
           profesi: user.profesi || prev.profesi,
           pendapatan_bln: user.pendapatan_bln || prev.pendapatan_bln,

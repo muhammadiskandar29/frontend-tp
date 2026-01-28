@@ -726,10 +726,11 @@ export default function CustomerProfilePage() {
                                     <label>Sapaan (Gelar)</label>
                                     <select name="sapaan" value={formData.sapaan || ""} onChange={handleChange} className="form-input">
                                         <option value="">- Pilih -</option>
-                                        <option value="Bapak">Bapak</option>
-                                        <option value="Ibu">Ibu</option>
-                                        <option value="Sdr">Saudara (Sdr)</option>
-                                        <option value="Sdri">Saudari (Sdri)</option>
+                                        <option value="Mas">Mas</option>
+                                        <option value="Mba">Mba</option>
+                                        <option value="Pak">Pak</option>
+                                        <option value="Bu">Bu</option>
+                                        <option value="Kak">Kak</option>
                                     </select>
                                 </div>
                                 <div className="form-group">
@@ -826,6 +827,7 @@ export default function CustomerProfilePage() {
                                         className="form-input"
                                     >
                                         <option value="">Pilih Range Pendapatan</option>
+                                        <option value="1-10jt">1 - 10 Juta</option>
                                         <option value="10-20jt">10 - 20 Juta</option>
                                         <option value="20-30jt">20 - 30 Juta</option>
                                         <option value="30-40jt">30 - 40 Juta</option>

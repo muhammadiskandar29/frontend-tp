@@ -7,6 +7,7 @@ import "@/styles/sales/customer.css";
 const formatPendapatan = (value) => {
   if (!value) return "—";
   const mapping = {
+    "1-10jt": "1 - 10 Juta",
     "10-20jt": "10 - 20 Juta",
     "20-30jt": "20 - 30 Juta",
     "30-40jt": "30 - 40 Juta",
@@ -194,6 +195,12 @@ export default function ViewCustomerModal({ customer, onClose, onEdit, onDelete 
               </div>
             )}
             <div className="detail-list">
+              <div className="detail-item">
+                <span className="detail-label">Sapaan</span>
+                <span className="detail-colon">:</span>
+                <span className="detail-value">{formatValue(customer.sapaan)}</span>
+              </div>
+
               <div className="detail-item">
                 <span className="detail-label">Nama</span>
                 <span className="detail-colon">:</span>
