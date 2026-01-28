@@ -281,26 +281,26 @@ export default function ViewOrders({ order, onClose }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                 <div>
                   <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem' }}>Produk</h4>
-                  <p style={{ fontSize: '1rem', fontWeight: 500, color: '#1e293b', marginBottom: (order.bundling_rel || order.bundling) ? '0.75rem' : '1.5rem' }}>{order.produk_rel?.nama || order.produk_nama || "-"}</p>
+                  <p style={{ fontSize: '1rem', fontWeight: 500, color: '#1e293b', marginBottom: '1.5rem' }}>{order.produk_rel?.nama || "-"}</p>
 
+                  {/* Penanganan Bundling: Meniru gaya Admin agar pasti tampil */}
                   {(() => {
-                    // Coba ambil bundling dari berbagai kemungkinan structure
                     const b = order.bundling_rel;
-                    const bName = b?.nama || (Array.isArray(b) ? b[0]?.nama : null) || order.bundling_nama;
+                    const bName = b?.nama || (Array.isArray(b) && b[0]?.nama) || order.bundling_nama;
 
-                    if (!bName && !order.bundling) {
-                      return <div style={{ marginBottom: '1.5rem' }}></div>;
-                    }
+                    if (!bName && !order.bundling) return <div style={{ marginBottom: '1.5rem' }}></div>;
 
                     return (
-                      <>
+                      <div style={{ marginBottom: '1.5rem' }}>
                         <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem' }}>Paket Bundling</h4>
-                        <p style={{ fontSize: '1rem', fontWeight: 500, color: '#1e293b', marginBottom: '1.5rem' }}>
-                          {bName || ("ID: " + (order.bundling_rel?.id || order.bundling))}
+                        <p style={{ fontSize: '1rem', fontWeight: 500, color: '#1e293b' }}>
+                          {bName || ("ID: " + order.bundling)}
                         </p>
-                      </>
+                      </div>
                     );
                   })()}
+
+
 
 
                   <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#334155', marginBottom: '0.5rem' }}>Status Order</h4>
