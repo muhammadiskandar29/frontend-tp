@@ -4,127 +4,128 @@ import React, { useState, useEffect } from 'react';
 import { MessageCircle, X, Send, User, Phone, MessageSquare } from 'lucide-react';
 
 export default function SupportWidget({ customerInfo }) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [message, setMessage] = useState("");
-    const [formData, setFormData] = useState({
-        nama: "",
-        wa: ""
-    });
+  const [isOpen, setIsOpen] = useState(false);
+  const [message, setMessage] = useState("");
+  const [formData, setFormData] = useState({
+    nama: "",
+    wa: ""
+  });
 
-    // Target WhatsApp Number (Support Central)
-    const SUPPORT_WA = "6281234567890"; // Ganti dengan nomor CS yang sesuai
+  // Target WhatsApp Number (Support Central)
+  const SUPPORT_WA = "6281234567890"; // Ganti dengan nomor CS yang sesuai
 
-    useEffect(() => {
-        if (customerInfo) {
-            setFormData({
-                nama: customerInfo.nama || customerInfo.nama_lengkap || "",
-                wa: customerInfo.wa || ""
-            });
-        }
-    }, [customerInfo]);
+  useEffect(() => {
+    if (customerInfo) {
+      setFormData({
+        nama: customerInfo.nama || customerInfo.nama_lengkap || "",
+        wa: customerInfo.wa || ""
+      });
+    }
+  }, [customerInfo]);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+  const handleSubmit = (e) => {
+    e.preventDefault();
 
-        const text = `Halo Admin, Saya butuh bantuan.\n\n` +
-            `*Nama:* ${formData.nama}\n` +
-            `*No. Telp:* ${formData.wa}\n` +
-            `*Pesan:* ${message}`;
+    const text = `Halo Admin, Saya butuh bantuan.\n\n` +
+      `*Nama:* ${formData.nama}\n` +
+      `*No. Telp:* ${formData.wa}\n` +
+      `*Pesan:* ${message}`;
 
-        const encoded = encodeURIComponent(text);
-        window.open(`https://wa.me/${SUPPORT_WA}?text=${encoded}`, "_blank");
-        setIsOpen(false);
-        setMessage("");
-    };
+    const encoded = encodeURIComponent(text);
+    window.open(`https://wa.me/${SUPPORT_WA}?text=${encoded}`, "_blank");
+    setIsOpen(false);
+    setMessage("");
+  };
 
-    return (
-        <div className="support-widget-container">
-            {/* Floating Action Button */}
-            {!isOpen && (
-                <button
-                    className="support-fab"
-                    onClick={() => setIsOpen(true)}
-                    aria-label="Butuh Bantuan"
-                >
-                    <div className="fab-icon-wrapper">
-                        <MessageCircle size={24} />
-                        <span className="fab-text">Butuh Bantuan?</span>
-                    </div>
-                </button>
-            )}
+  return (
+    <div className="support-widget-container">
+      {/* Floating Action Button */}
+      {!isOpen && (
+        <button
+          className="support-fab"
+          onClick={() => setIsOpen(true)}
+          aria-label="Butuh Bantuan"
+        >
+          <div className="fab-icon-wrapper">
+            <MessageCircle size={24} />
+            <span className="fab-text">Butuh Bantuan?</span>
+          </div>
+        </button>
+      )}
 
-            {/* Small Support Modal/Popover */}
-            {isOpen && (
-                <div className="support-popover">
-                    <div className="popover-header">
-                        <div className="header-icon-bg">
-                            <MessageSquare size={18} />
-                        </div>
-                        <div className="header-text">
-                            <h4>Customer Support</h4>
-                            <p>Kami siap membantu Anda</p>
-                        </div>
-                        <button className="close-popover" onClick={() => setIsOpen(false)}>
-                            <X size={18} />
-                        </button>
-                    </div>
+      {/* Small Support Modal/Popover */}
+      {isOpen && (
+        <div className="support-popover">
+          <div className="popover-header">
+            <div className="header-icon-bg">
+              <MessageSquare size={18} />
+            </div>
+            <div className="header-text">
+              <h4>Customer Support</h4>
+              <p>Kami siap membantu Anda</p>
+            </div>
+            <button className="close-popover" onClick={() => setIsOpen(false)}>
+              <X size={18} />
+            </button>
+          </div>
 
-                    <form className="popover-body" onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label>
-                                <User size={14} /> Nama Anda
-                            </label>
-                            <input
-                                type="text"
-                                value={formData.nama}
-                                readOnly
-                                className="readonly-input"
-                            />
-                        </div>
+          <form className="popover-body" onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>
+                <User size={14} /> Nama Anda
+              </label>
+              <input
+                type="text"
+                value={formData.nama}
+                readOnly
+                className="readonly-input"
+              />
+            </div>
 
-                        <div className="form-group">
-                            <label>
-                                <Phone size={14} /> No. WhatsApp
-                            </label>
-                            <input
-                                type="text"
-                                value={formData.wa}
-                                readOnly
-                                className="readonly-input"
-                            />
-                        </div>
+            <div className="form-group">
+              <label>
+                <Phone size={14} /> No. WhatsApp
+              </label>
+              <input
+                type="text"
+                value={formData.wa}
+                readOnly
+                className="readonly-input"
+              />
+            </div>
 
-                        <div className="form-group">
-                            <label>
-                                <Send size={14} /> Isi Pesan
-                            </label>
-                            <textarea
-                                placeholder="Ceritakan masalah atau kendala Anda..."
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                                required
-                                rows={3}
-                            />
-                        </div>
+            <div className="form-group">
+              <label>
+                <Send size={14} /> Isi Pesan
+              </label>
+              <textarea
+                placeholder="Ceritakan masalah atau kendala Anda..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                required
+                rows={3}
+              />
+            </div>
 
-                        <button type="submit" className="submit-support-btn">
-                            <span>Kirim ke WhatsApp</span>
-                            <Send size={16} />
-                        </button>
-                    </form>
+            <button type="submit" className="submit-support-btn">
+              <span>Kirim ke WhatsApp</span>
+              <Send size={16} />
+            </button>
+          </form>
 
-                    <div className="popover-footer">
-                        Respon rata-rata: &lt; 15 Menit
-                    </div>
-                </div>
-            )}
+          <div className="popover-footer">
+            Respon rata-rata: &lt; 15 Menit
+          </div>
+        </div>
+      )}
 
-            <style jsx>{`
+      <style jsx>{`
         .support-widget-container {
           position: fixed;
-          bottom: 100px; /* Agak ke atas sesuai request */
+          bottom: 40px; /* Turunkan sedikit agar tidak terlalu tinggi */
           right: 30px;
-          z-index: 999;
+          z-index: 9999; /* Maksimalkan z-index agar di atas segalanya */
+          pointer-events: auto;
           font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
 
@@ -323,6 +324,6 @@ export default function SupportWidget({ customerInfo }) {
           }
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }
