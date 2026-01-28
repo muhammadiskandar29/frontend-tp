@@ -120,7 +120,7 @@ export function useProductForm({
                 custom_value: Array.isArray(customerForm.custom_value)
                     ? customerForm.custom_value
                     : (customerForm.custom_value ? [customerForm.custom_value] : []),
-                ...(bundlingId ? { bundling_id: bundlingId } : {}),
+                ...(bundlingId ? { bundling: bundlingId } : {}),
             };
 
             const response = await fetch("/api/order", {

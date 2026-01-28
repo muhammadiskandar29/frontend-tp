@@ -21,7 +21,7 @@ export default function AddOrders({ onClose, onAdd }) {
     alamat: "", // Alamat pengiriman (untuk order)
     customer: "",
     produk: "",
-    bundling_id: "", // Field baru untuk bundling
+    bundling: "", // Diubah dari bundling_id
     harga: "",
     ongkir: "",
     total_harga: "",
@@ -432,7 +432,7 @@ export default function AddOrders({ onClose, onAdd }) {
       ongkir: String(parseCurrency(formData.ongkir) || "0"),
       total_harga: String(parseCurrency(formData.total_harga) || "0"),
       status_pembayaran: formData.status_pembayaran === 4 ? 4 : (formData.status_pembayaran === null ? null : 0),
-      bundling_id: formData.bundling_id || null,
+      bundling: formData.bundling || null,
     };
 
     console.log("[ADD_ORDERS] Payload sebelum kirim:", JSON.stringify(payload, null, 2));
@@ -823,17 +823,16 @@ export default function AddOrders({ onClose, onAdd }) {
 
                 {/* Produk (ID) removed from display, but retained in state */}
 
-                {/* Bundling Selection */}
                 {selectedProduct && selectedProduct.bundling_rel && selectedProduct.bundling_rel.length > 0 && (
                   <label className="orders-field">
-                    Pilih Bundling
+                    Pilih Bundling (Opsional)
                     <select
-                      name="bundling_id"
-                      value={formData.bundling_id}
+                      name="bundling"
+                      value={formData.bundling}
                       onChange={handleChange}
                       style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }}
                     >
-                      <option value="">-- Pilih Bundling Option --</option>
+                      <option value="">-- Tanpa Bundling --</option>
                       {selectedProduct.bundling_rel.map((b) => (
                         <option key={b.id} value={b.id}>
                           {b.nama_bundling || b.info_bundling || `Bundle #${b.id}`}
