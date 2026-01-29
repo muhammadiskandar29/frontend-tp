@@ -150,23 +150,8 @@ export default function DashboardPage() {
   };
 
   const handleContinuePayment = async (order) => {
-    // Ambil data dari localStorage sebagai prioritas jika ada matching orderId
-    const storedOrderData = localStorage.getItem("customer_order_data");
-    let localPaymentMethod = null;
-
-    if (storedOrderData) {
-      try {
-        const parsed = JSON.parse(storedOrderData);
-        if (String(parsed.orderId) === String(order.id)) {
-          localPaymentMethod = parsed.paymentMethod;
-        }
-      } catch (e) {
-        console.error("Error parsing stored order data", e);
-      }
-    }
-
-    // Prioritaskan metode_bayar dari order object, lalu paymentMethod (jika hasil adaptasi), lalu localStorage
-    const rawPaymentMethod = order.metode_bayar || order.paymentMethod || localPaymentMethod || "manual";
+    // Ambil paymentMethod dari objek order (yang sudah di-adapt dengan prioritas API)
+    const rawPaymentMethod = order.metode_bayar || order.paymentMethod || "manual";
     const paymentMethod = String(rawPaymentMethod).toLowerCase();
 
     const productName = order.title || order.produk_nama || "Produk";
@@ -184,7 +169,7 @@ export default function DashboardPage() {
       const finalEmail = customerInfo?.email || session?.user?.email || "";
 
       if (!finalNama || !finalEmail) {
-        toast.error("Data customer tidak lengkap. Silakan lengkapi profil Anda.");
+        toast.error("Data profil tidak lengkap untuk pembayaran online.");
         setShowUpdateModal(true);
         setUpdateModalReason("data");
         return;
@@ -213,7 +198,7 @@ export default function DashboardPage() {
           endpoint = "/api/midtrans/create-snap-cc";
         }
 
-        console.log("[DASHBOARD] Calling Midtrans API:", { endpoint, orderId, amount });
+        console.log("[DASHBOARD] Triggering API:", { endpoint, orderId });
 
         const response = await fetch(endpoint, {
           method: "POST",
@@ -230,10 +215,9 @@ export default function DashboardPage() {
         const data = await response.json();
 
         if (data.success && data.redirect_url) {
-          // Simpan order IDs untuk tracking
+          // Simpan order IDs untuk sesi ini
           sessionStorage.setItem("midtrans_order_id", String(orderId));
           if (data.order_id) {
-            // Unique order ID dari backend (ORDER-ID-RANDOM)
             sessionStorage.setItem("midtrans_order_id_midtrans", data.order_id);
           }
           if (data.snap_token) {
@@ -243,8 +227,8 @@ export default function DashboardPage() {
           toast.success(`Membuka pembayaran ${paymentMethod.toUpperCase()}...`);
           window.open(data.redirect_url, "_blank");
         } else {
-          toast.error(data.message || "Gagal membuat transaksi online.");
-          // Fallback ke manual
+          toast.error(data.message || "Gagal membuat sesi pembayaran online.");
+          // Fallback manual
           router.push(`/payment?product=${encodeURIComponent(productName)}&harga=${amount}&via=manual&order_id=${orderId}&sumber=dashboard`);
         }
       } catch (error) {
@@ -254,11 +238,12 @@ export default function DashboardPage() {
         setPaymentLoading(false);
       }
     } else {
-      // Manual transfer
+      // Manual Transfer
       const amountValue = typeof totalHarga === "string"
         ? totalHarga.replace(/\D/g, "")
         : totalHarga;
 
+      console.log("[DASHBOARD] Redirecting to Manual Transfer");
       router.push(`/payment?product=${encodeURIComponent(productName)}&harga=${amountValue}&via=manual&order_id=${orderId}&sumber=dashboard`);
     }
   };
