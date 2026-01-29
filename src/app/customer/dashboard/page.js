@@ -241,23 +241,29 @@ export default function DashboardPage() {
         console.log("[DASHBOARD] Midtrans response:", data);
 
         if (data.success === true && data.redirect_url) {
+          // Simpan original orderId dan unique orderId dari backend (e.g. ORDER-39-123456)
           if (orderId) {
             sessionStorage.setItem("midtrans_order_id", String(orderId));
           }
           if (data.snap_token) {
             sessionStorage.setItem("midtrans_snap_token", data.snap_token);
           }
+          if (data.order_id) {
+            // Ini adalah ID unik yang dikirim Midtrans (dengan random suffix)
+            sessionStorage.setItem("midtrans_order_id_midtrans", data.order_id);
+          }
 
           toast.success("Halaman pembayaran Midtrans dibuka...");
           window.open(data.redirect_url, "_blank");
         } else {
           toast.error(data.message || "Gagal membuat transaksi pembayaran");
-          // Fallback
+          // Fallback ke manual payment page
           const query = new URLSearchParams({
             product: productName || "",
             harga: totalHarga || "0",
             via: "manual",
             sumber: "dashboard",
+            order_id: orderId || "",
           });
           router.push(`/payment?${query.toString()}`);
         }

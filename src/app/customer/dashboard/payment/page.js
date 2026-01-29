@@ -236,25 +236,25 @@ export default function PaymentPage() {
 
         // Sesuai dokumentasi: response harus memiliki success: true dan redirect_url
         if (data.success === true && data.redirect_url) {
-          // Simpan order ID ke sessionStorage untuk tracking setelah kembali dari Midtrans
+          // Simpan original order ID ke sessionStorage untuk tracking
           if (orderId) {
             sessionStorage.setItem("midtrans_order_id", String(orderId));
           }
 
-          // Simpan snap_token dan order_id dari Midtrans jika ada
+          // Simpan snap_token dan unique order_id dari backend (e.g. ORDER-39-123456)
           if (data.snap_token) {
             sessionStorage.setItem("midtrans_snap_token", data.snap_token);
           }
           if (data.order_id) {
+            // Ini adalah ID unik yang dikirim Midtrans (dengan random suffix)
             sessionStorage.setItem("midtrans_order_id_midtrans", data.order_id);
           }
 
-          // Buka Midtrans gateway di tab baru sesuai dokumentasi
-          console.log("[PAYMENT] Opening Midtrans in new tab:", data.redirect_url);
+          // Buka Midtrans gateway
+          console.log("[PAYMENT] Backend generated unique order ID:", data.order_id);
           window.open(data.redirect_url, "_blank");
 
-          // Tampilkan toast info
-          toast.success("Halaman pembayaran Midtrans dibuka di tab baru");
+          toast.success("Halaman pembayaran Midtrans dibuka...");
         } else {
           // Jika tidak ada redirect_url atau success false, tampilkan error
           console.error("[PAYMENT] Midtrans tidak mengembalikan redirect_url atau success false:", data);
