@@ -114,16 +114,22 @@ export default function Dashboard() {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // 3. Fetch Product Statistics (New)
+      // 3. Fetch Product Statistics
       const prodStatsPromise = axios.get(`${BASE_URL}/sales/dashboard/produk-statistics`, {
         params: { sales_id: currentUserId },
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      const [statsData, dashRes, prodRes] = await Promise.all([
+      // 4. Fetch Recent Orders per Sales (New Source)
+      const salesOrdersPromise = axios.get(`${BASE_URL}/sales/order/sales`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const [statsData, dashRes, prodRes, salesOrdersRes] = await Promise.all([
         statsPromise.catch(() => []),
         dashPromise.catch(() => ({ data: { success: false } })),
-        prodStatsPromise.catch(() => ({ data: { success: false } }))
+        prodStatsPromise.catch(() => ({ data: { success: false } })),
+        salesOrdersPromise.catch(() => ({ data: { success: false } }))
       ]);
 
       // Handle Order Stats
@@ -156,7 +162,7 @@ export default function Dashboard() {
       if (dashJson.success) {
         const data = dashJson.data || dashJson;
         setDashboardStats(data);
-        setRecentOrders(data.pembelian_terakhir || []);
+        // setRecentOrders(data.pembelian_terakhir || []); // No longer using this for recent orders
         setFollowUpHistory(data.riwayat_follow_up || []);
       }
 
@@ -165,6 +171,14 @@ export default function Dashboard() {
       if (prodJson.success && prodJson.data) {
         setProductStats(prodJson.data.produk_statistics || []);
         setProductSummary(prodJson.data.summary || null);
+      }
+
+      // Handle Recent Sales Orders (New Source)
+      const salesOrdersJson = salesOrdersRes.data;
+      if (salesOrdersJson.success) {
+        // Limit to 10 for "Recent"
+        const orders = salesOrdersJson.data?.data || salesOrdersJson.data || [];
+        setRecentOrders(orders.slice(0, 10));
       }
 
     } catch (err) {
@@ -282,13 +296,6 @@ export default function Dashboard() {
       icon: <TrendingUp size={24} />,
       color: "accent-cyan",
       desc: "Success / Total"
-    },
-    {
-      label: "Pending Orders",
-      value: (orderStats.prosesCount || 0).toLocaleString("id-ID"),
-      icon: <Clock size={24} />,
-      color: "accent-orange",
-      desc: "Menunggu Proses"
     }
   ];
 
@@ -444,20 +451,22 @@ export default function Dashboard() {
                           <td style={{ padding: '1rem' }}>
                             <div className="customer-cell">
                               <div className="avatar-small">
-                                {order.customer?.charAt(0) || "C"}
+                                {order.customer_rel?.nama?.charAt(0) || order.customer_nama?.charAt(0) || "C"}
                               </div>
                               <div>
-                                <span className="customer-name">{order.customer || "-"}</span>
-                                <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>{order.tanggal}</p>
+                                <span className="customer-name">{order.customer_rel?.nama || order.customer_nama || order.customer || "-"}</span>
+                                <p style={{ fontSize: '0.7rem', color: '#6b7280' }}>
+                                  {order.tanggal_order || order.tanggal || order.create_at || "-"}
+                                </p>
                               </div>
                             </div>
                           </td>
                           <td style={{ padding: '1rem' }}>
-                            <span className={`status-badge ${order.status_pembayaran === '2' ? 'paid' : 'unpaid'}`}>
-                              {order.status_pembayaran === '2' ? 'Paid' : 'Unpaid'}
+                            <span className={`status-badge ${String(order.status_pembayaran) === '2' ? 'paid' : 'unpaid'}`}>
+                              {String(order.status_pembayaran) === '2' ? 'Paid' : 'Unpaid'}
                             </span>
                           </td>
-                          <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, color: '#111827' }}>
+                          <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, color: '#111827', fontSize: '0.85rem' }}>
                             {order.total_harga_formatted || formatCurrency(order.total_harga)}
                           </td>
                         </tr>
@@ -529,6 +538,8 @@ export default function Dashboard() {
 
         .stat-value-main { font-size: 1.1rem; font-weight: 800; color: #1e293b; }
         .stat-sub-txt { font-size: 0.75rem; color: #94a3b8; margin: 0; }
+
+        .summary-card__value { font-size: 1.15rem; font-weight: 800; color: #1e293b; }
 
         .conversion-container { width: 100%; max-width: 140px; }
         .conversion-text { display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; }
