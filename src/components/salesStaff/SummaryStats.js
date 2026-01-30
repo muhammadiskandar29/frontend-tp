@@ -78,6 +78,7 @@ export default function SummaryStats({ orderStats, mePerformance }) {
                 .summary-card {
                     background: #ffffff;
                     border: 1px solid #f1f5f9;
+                    border-top: 4px solid #f97316;
                     border-radius: 1.25rem;
                     padding: 1.25rem;
                     display: flex;
@@ -101,23 +102,19 @@ export default function SummaryStats({ orderStats, mePerformance }) {
                     justify-content: center;
                     flex-shrink: 0;
                     position: relative;
+                    background: #f97316;
+                    color: #ffffff;
+                    box-shadow: 0 8px 16px -4px rgba(249, 115, 22, 0.4);
                 }
 
-                .summary-card__icon.accent-emerald { 
-                    background: #ecfdf5; color: #10b981; 
-                    box-shadow: 0 8px 16px -4px rgba(16, 185, 129, 0.2);
-                }
-                .summary-card__icon.accent-blue { 
-                    background: #eff6ff; color: #3b82f6; 
-                    box-shadow: 0 8px 16px -4px rgba(59, 130, 246, 0.2);
-                }
-                .summary-card__icon.accent-red { 
-                    background: #fef2f2; color: #ef4444; 
-                    box-shadow: 0 8px 16px -4px rgba(239, 68, 68, 0.2);
-                }
+                /* Override specific colors to all use Orange as per user request */
+                .summary-card__icon.accent-emerald,
+                .summary-card__icon.accent-blue,
+                .summary-card__icon.accent-red,
                 .summary-card__icon.accent-cyan { 
-                    background: #ecfeff; color: #0891b2; 
-                    box-shadow: 0 8px 16px -4px rgba(8, 145, 178, 0.2);
+                    background: #f97316; 
+                    color: #ffffff;
+                    box-shadow: 0 8px 16px -4px rgba(249, 115, 22, 0.4);
                 }
 
                 .summary-card__label { 
@@ -132,7 +129,7 @@ export default function SummaryStats({ orderStats, mePerformance }) {
                 .summary-card__value { 
                     font-size: 1.35rem; 
                     font-weight: 850; 
-                    color: #1e293b; 
+                    color: #001f3f; 
                     line-height: 1.2;
                 }
 
