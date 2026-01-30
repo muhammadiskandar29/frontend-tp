@@ -78,52 +78,12 @@ export default function SummaryStats({ orderStats, mePerformance }) {
                 .summary-card {
                     background: #ffffff;
                     border: 1px solid #f1f5f9;
-                    border-top: 4px solid #f97316;
-                    border-radius: 1.25rem;
+                    border-radius: 1rem;
                     padding: 1.25rem;
                     display: flex;
                     align-items: center;
                     gap: 1.25rem;
-                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.03), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
                     transition: all 0.3s ease;
-                }
-
-                .summary-card:hover {
-                    transform: translateY(-4px);
-                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-                }
-
-                .summary-card__icon {
-                    width: 52px;
-                    height: 52px;
-                    border-radius: 14px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    flex-shrink: 0;
-                    position: relative;
-                    background: #f97316;
-                    color: #ffffff;
-                    box-shadow: 0 8px 16px -4px rgba(249, 115, 22, 0.4);
-                }
-
-                /* Override specific colors to all use Orange as per user request */
-                .summary-card__icon.accent-emerald,
-                .summary-card__icon.accent-blue,
-                .summary-card__icon.accent-red,
-                .summary-card__icon.accent-cyan { 
-                    background: #f97316; 
-                    color: #ffffff;
-                    box-shadow: 0 8px 16px -4px rgba(249, 115, 22, 0.4);
-                }
-
-                .summary-card__label { 
-                    font-size: 0.7rem; 
-                    color: #94a3b8; 
-                    font-weight: 700; 
-                    text-transform: uppercase; 
-                    letter-spacing: 0.05em;
-                    margin-bottom: 2px; 
                 }
 
                 .summary-card__value { 
@@ -138,10 +98,6 @@ export default function SummaryStats({ orderStats, mePerformance }) {
                     color: #64748b; 
                     margin-top: 4px; 
                     font-weight: 500;
-                }
-
-                .panel--summary {
-                    padding: 1.75rem;
                 }
 
                 @media (max-width: 1024px) {
