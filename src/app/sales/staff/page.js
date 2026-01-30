@@ -54,6 +54,8 @@ export default function Dashboard() {
   const [followUpHistory, setFollowUpHistory] = useState([]);
   const [mePerformance, setMePerformance] = useState(null);
   const [dashboardStats, setDashboardStats] = useState(null);
+  const [productStats, setProductStats] = useState([]);
+  const [productSummary, setProductSummary] = useState(null);
 
   // Status mapping matching orders page
   const STATUS_ORDER_MAP = {
@@ -104,49 +106,67 @@ export default function Dashboard() {
       }
 
       // 1. Process Individual Sales Statistics (Using same logic as Orders page)
-      try {
-        const statsData = await getOrderStatisticPerSales();
-        if (statsData && Array.isArray(statsData) && statsData.length > 0) {
-          const myStats = statsData.find(s => Number(s.sales_id) === Number(currentUserId)) || statsData[0];
-          if (myStats) {
-            setOrderStats(prev => ({
-              ...prev,
-              totalOrders: Number(myStats.total_order) || 0,
-              unpaidCount: Number(myStats.total_order_unpaid) || 0,
-              prosesCount: Number(myStats.total_order_menunggu) || 0,
-              paidCount: Number(myStats.total_order_sudah_diapprove) || 0,
-              totalRevenue: Number(myStats.revenue) || 0,
-              totalRevenueFormatted: formatCurrency(myStats.revenue),
-              conversionRateFormatted: myStats.total_order > 0
-                ? `${((myStats.total_order_sudah_diapprove / myStats.total_order) * 100).toFixed(2)}%`
-                : "0.00%",
-            }));
-            setMePerformance({
-              ...myStats,
-              conversion_rate_formatted: myStats.total_order > 0
-                ? `${((myStats.total_order_sudah_diapprove / myStats.total_order) * 100).toFixed(2)}%`
-                : "0.00%"
-            });
-          }
-        }
-      } catch (err) {
-        console.error("Error loading order statistics:", err);
-      }
+      const statsPromise = getOrderStatisticPerSales();
 
       // 2. Process Dashboard Data (Activity & Recent)
-      const dashRes = await axios.get(`${BASE_URL}/sales/dashboard`, {
+      const dashPromise = axios.get(`${BASE_URL}/sales/dashboard`, {
         params: { sales_id: currentUserId },
         headers: { Authorization: `Bearer ${token}` }
-      }).catch(e => ({ data: { success: false } }));
+      });
 
+      // 3. Fetch Product Statistics (New)
+      const prodStatsPromise = axios.get(`${BASE_URL}/sales/dashboard/produk-statistics`, {
+        params: { sales_id: currentUserId },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const [statsData, dashRes, prodRes] = await Promise.all([
+        statsPromise.catch(() => []),
+        dashPromise.catch(() => ({ data: { success: false } })),
+        prodStatsPromise.catch(() => ({ data: { success: false } }))
+      ]);
+
+      // Handle Order Stats
+      if (statsData && Array.isArray(statsData) && statsData.length > 0) {
+        const myStats = statsData.find(s => Number(s.sales_id) === Number(currentUserId)) || statsData[0];
+        if (myStats) {
+          setOrderStats(prev => ({
+            ...prev,
+            totalOrders: Number(myStats.total_order) || 0,
+            unpaidCount: Number(myStats.total_order_unpaid) || 0,
+            prosesCount: Number(myStats.total_order_menunggu) || 0,
+            paidCount: Number(myStats.total_order_sudah_diapprove) || 0,
+            totalRevenue: Number(myStats.revenue) || 0,
+            totalRevenueFormatted: formatCurrency(myStats.revenue),
+            conversionRateFormatted: myStats.total_order > 0
+              ? `${((myStats.total_order_sudah_diapprove / myStats.total_order) * 100).toFixed(2)}%`
+              : "0.00%",
+          }));
+          setMePerformance({
+            ...myStats,
+            conversion_rate_formatted: myStats.total_order > 0
+              ? `${((myStats.total_order_sudah_diapprove / myStats.total_order) * 100).toFixed(2)}%`
+              : "0.00%"
+          });
+        }
+      }
+
+      // Handle Dashboard Data
       const dashJson = dashRes.data;
-      const data = dashJson.data || (dashJson.statistik ? dashJson : null);
-
-      if (dashJson.success && data) {
+      if (dashJson.success) {
+        const data = dashJson.data || dashJson;
         setDashboardStats(data);
         setRecentOrders(data.pembelian_terakhir || []);
         setFollowUpHistory(data.riwayat_follow_up || []);
       }
+
+      // Handle Product Stats
+      const prodJson = prodRes.data;
+      if (prodJson.success && prodJson.data) {
+        setProductStats(prodJson.data.produk_statistics || []);
+        setProductSummary(prodJson.data.summary || null);
+      }
+
     } catch (err) {
       console.error("Critical error fetching dashboard:", err);
     } finally {
@@ -303,15 +323,109 @@ export default function Dashboard() {
           </article>
         </section>
 
-        {/* --- RECENT ORDERS & FOLLOWUP (NEW) --- */}
+        {/* --- PRODUCT PERFORMANCE (NEW & WIDE) --- */}
+        <section className="dashboard-panels" style={{ marginTop: '1rem' }}>
+          <article className="panel">
+            <div className="panel__header">
+              <div>
+                <p className="panel__eyebrow">Product Performance</p>
+                <h3 className="panel__title">Statistik Produk Terlaris Anda</h3>
+                <p className="panel__subtitle">Analisis performa penjualan berdasarkan kategori produk</p>
+              </div>
+              {productSummary && (
+                <div className="summary-pills">
+                  <div className="pill">
+                    <span className="pill-label">Total Produk:</span>
+                    <span className="pill-value">{productSummary.total_produk}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: "left", padding: '1rem' }}>Informasi Produk</th>
+                    <th style={{ textAlign: "center", padding: '1rem' }}>Total Leads</th>
+                    <th style={{ textAlign: "center", padding: '1rem' }}>Conversion</th>
+                    <th style={{ textAlign: "right", padding: '1rem' }}>Revenue (Paid)</th>
+                    <th style={{ textAlign: "right", padding: '1rem' }}>Potential (Unpaid)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {productStats.length > 0 ? (
+                    productStats.map((prod, idx) => (
+                      <tr key={prod.produk_id || idx}>
+                        <td style={{ padding: '1rem' }}>
+                          <div className="product-info-cell">
+                            <div className="product-icon-box">
+                              <Package size={18} />
+                            </div>
+                            <div>
+                              <p className="product-name-txt">{prod.produk_nama}</p>
+                              <span className="product-code-badge">{prod.produk_kode}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          <span className="stat-value-main">{prod.total_customers}</span>
+                          <p className="stat-sub-txt">Customers</p>
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <div className="conversion-container">
+                            <div className="conversion-text">
+                              <span className="paid-count">{prod.total_paid}</span>
+                              <span className="total-count">/ {prod.total_customers}</span>
+                              <span className="percent-badge">
+                                {prod.total_customers > 0
+                                  ? `${((prod.total_paid / prod.total_customers) * 100).toFixed(0)}%`
+                                  : '0%'}
+                              </span>
+                            </div>
+                            <div className="progress-bar-bg">
+                              <div
+                                className="progress-bar-fill"
+                                style={{
+                                  width: `${prod.total_customers > 0 ? (prod.total_paid / prod.total_customers) * 100 : 0}%`,
+                                  backgroundColor: prod.total_paid > 0 ? '#10b981' : '#e2e8f0'
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'right' }}>
+                          <p className="revenue-paid">{prod.total_revenue_formatted}</p>
+                          <span className="revenue-count">{prod.total_paid} Closing</span>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'right' }}>
+                          <p className="revenue-pending">{prod.total_pending_revenue_formatted}</p>
+                          <span className="revenue-count">{prod.total_unpaid} Pending</span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="table-empty">
+                        {loading ? "Memuat data statistik produk..." : "Belum ada statistik produk tersedia."}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        {/* --- RECENT ACTIVITY GRID --- */}
         <div className="dashboard-grid-two-columns">
-          {/* LEFT: RECENT ORDERS */}
+          {/* LEFT: RECENT ORDERS (Moved/Merged) */}
           <section className="dashboard-panels">
             <article className="panel">
               <div className="panel__header">
                 <div>
                   <h3 className="panel__title">Recent Orders</h3>
-                  <p className="panel__subtitle">10 Transaksi terbaru milik Anda</p>
+                  <p className="panel__subtitle">Daftar transaksi pelanggan terakhir</p>
                 </div>
               </div>
               <div className="table-wrapper">
@@ -319,9 +433,8 @@ export default function Dashboard() {
                   <thead>
                     <tr>
                       <th style={{ textAlign: "left", padding: '1rem' }}>Customer</th>
-                      <th style={{ textAlign: "left", padding: '1rem' }}>Produk</th>
-                      <th style={{ textAlign: "left", padding: '1rem' }}>Total</th>
-                      <th style={{ textAlign: "left", padding: '1rem' }}>Date</th>
+                      <th style={{ textAlign: "left", padding: '1rem' }}>Status</th>
+                      <th style={{ textAlign: "right", padding: '1rem' }}>Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -333,23 +446,25 @@ export default function Dashboard() {
                               <div className="avatar-small">
                                 {order.customer?.charAt(0) || "C"}
                               </div>
-                              <span className="customer-name">{order.customer || "-"}</span>
+                              <div>
+                                <span className="customer-name">{order.customer || "-"}</span>
+                                <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>{order.tanggal}</p>
+                              </div>
                             </div>
                           </td>
-                          <td style={{ padding: '1rem', color: '#4b5563', fontSize: '0.9rem' }}>
-                            {order.produk || "-"}
+                          <td style={{ padding: '1rem' }}>
+                            <span className={`status-badge ${order.status_pembayaran === '2' ? 'paid' : 'unpaid'}`}>
+                              {order.status_pembayaran === '2' ? 'Paid' : 'Unpaid'}
+                            </span>
                           </td>
-                          <td style={{ padding: '1rem', fontWeight: 700, color: '#111827' }}>
+                          <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, color: '#111827' }}>
                             {order.total_harga_formatted || formatCurrency(order.total_harga)}
-                          </td>
-                          <td style={{ padding: '1rem', color: '#6b7280', fontSize: '0.85rem' }}>
-                            {order.tanggal || "-"}
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="4" className="table-empty">Belum ada order terbaru.</td>
+                        <td colSpan="3" className="table-empty">Belum ada order terbaru.</td>
                       </tr>
                     )}
                   </tbody>
@@ -364,7 +479,7 @@ export default function Dashboard() {
               <div className="panel__header">
                 <div>
                   <h3 className="panel__title">Aktivitas Follow-Up</h3>
-                  <p className="panel__subtitle">Riwayat interaksi terakhir dengan leads</p>
+                  <p className="panel__subtitle">Riwayat interaksi terakhir Anda</p>
                 </div>
               </div>
               <div className="activity-feed">
@@ -378,7 +493,7 @@ export default function Dashboard() {
                           <span className="a-time">{log.tanggal}</span>
                         </div>
                         <p className="a-type">{log.follup}</p>
-                        <p className="a-desc">{log.keterangan?.substring(0, 80)}...</p>
+                        <p className="a-desc">{log.keterangan?.substring(0, 60)}...</p>
                       </div>
                     </div>
                   ))
@@ -400,13 +515,54 @@ export default function Dashboard() {
           margin-top: 1rem;
         }
 
-        .customer-name { font-weight: 700; color: #1e293b; }
-        .avatar-small {
-          width: 32px; height: 32px; background: #f1f5f9; border-radius: 50%;
-          display: flex; align-items: center; justify-content: center;
-          font-weight: 800; color: #475569; font-size: 12px;
+        /* Product Stats Premium Styles */
+        .product-info-cell { display: flex; align-items: center; gap: 12px; }
+        .product-icon-box {
+          width: 36px; height: 36px; background: #eff6ff; color: #3b82f6; 
+          border-radius: 8px; display: flex; align-items: center; justify-content: center;
         }
-        .customer-cell { display: flex; align-items: center; gap: 12px; }
+        .product-name-txt { font-weight: 700; color: #1e293b; margin: 0; font-size: 0.9rem; }
+        .product-code-badge { 
+          font-size: 0.65rem; font-weight: 700; color: #64748b; background: #f1f5f9; 
+          padding: 2px 6px; border-radius: 4px; text-transform: uppercase;
+        }
+
+        .stat-value-main { font-size: 1.1rem; font-weight: 800; color: #1e293b; }
+        .stat-sub-txt { font-size: 0.75rem; color: #94a3b8; margin: 0; }
+
+        .conversion-container { width: 100%; max-width: 140px; }
+        .conversion-text { display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; }
+        .paid-count { font-weight: 800; color: #10b981; font-size: 0.9rem; }
+        .total-count { color: #94a3b8; font-size: 0.75rem; }
+        .percent-badge { 
+          margin-left: auto; font-size: 0.7rem; font-weight: 700; color: #3b82f6;
+          background: #eff6ff; padding: 1px 5px; border-radius: 4px;
+        }
+        .progress-bar-bg { width: 100%; height: 6px; background: #f1f5f9; border-radius: 10px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+
+        .revenue-paid { font-weight: 800; color: #059669; font-size: 0.95rem; margin: 0; }
+        .revenue-pending { font-weight: 800; color: #d97706; font-size: 0.95rem; margin: 0; }
+        .revenue-count { font-size: 0.75rem; color: #94a3b8; font-weight: 500; }
+
+        .summary-pills { display: flex; gap: 10px; }
+        .pill { background: #f8fafc; border: 1px solid #e2e8f0; padding: 4px 12px; border-radius: 20px; display: flex; gap: 6px; align-items: center; }
+        .pill-label { font-size: 0.7rem; color: #64748b; font-weight: 600; }
+        .pill-value { font-size: 0.75rem; color: #1e293b; font-weight: 800; }
+
+        .status-badge {
+          font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 5px; text-transform: uppercase;
+        }
+        .status-badge.paid { background: #dcfce7; color: #15803d; }
+        .status-badge.unpaid { background: #fee2e2; color: #b91c1c; }
+
+        .customer-name { font-weight: 700; color: #1e293b; font-size: 0.9rem; }
+        .avatar-small {
+          width: 32px; height: 32px; background: #f1f5f9; border-radius: 8px;
+          display: flex; align-items: center; justify-content: center;
+          font-weight: 800; color: #475569; font-size: 11px; flex-shrink: 0;
+        }
+        .customer-cell { display: flex; align-items: center; gap: 10px; }
 
         .panel__subtitle { font-size: 0.85rem; color: #94a3b8; margin-top: 4px; }
 
@@ -441,12 +597,12 @@ export default function Dashboard() {
         
         .activity-content { flex: 1; }
         .activity-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-        .a-customer { font-weight: 700; color: #334155; font-size: 0.95rem; }
-        .a-time { font-size: 0.75rem; color: #94a3b8; }
-        .a-type { font-size: 0.8rem; font-weight: 600; color: #ff7a00; margin-bottom: 4px; }
-        .a-desc { font-size: 0.85rem; color: #64748b; line-height: 1.5; }
+        .a-customer { font-weight: 700; color: #334155; font-size: 0.9rem; }
+        .a-time { font-size: 0.725rem; color: #94a3b8; }
+        .a-type { font-size: 0.775rem; font-weight: 600; color: #ff7a00; margin-bottom: 4px; }
+        .a-desc { font-size: 0.8rem; color: #64748b; line-height: 1.5; }
         
-        @media (max-width: 1024px) {
+        @media (max-width: 1280px) {
           .dashboard-grid-two-columns { grid-template-columns: 1fr; }
         }
       `}</style>
