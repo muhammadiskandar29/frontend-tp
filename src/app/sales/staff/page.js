@@ -448,25 +448,27 @@ export default function Dashboard() {
                     {recentOrders.length > 0 ? (
                       recentOrders.map((order, idx) => (
                         <tr key={order.id || idx}>
-                          <td style={{ padding: '1rem' }}>
+                          <td style={{ padding: '0.75rem 1rem' }}>
                             <div className="customer-cell">
                               <div className="avatar-small">
-                                {order.customer_rel?.nama?.charAt(0) || order.customer_nama?.charAt(0) || "C"}
+                                {order.customer_rel?.nama?.charAt(0) || order.customer_nama?.charAt(0) || order.customer?.charAt(0) || "C"}
                               </div>
                               <div>
-                                <span className="customer-name">{order.customer_rel?.nama || order.customer_nama || order.customer || "-"}</span>
-                                <p style={{ fontSize: '0.7rem', color: '#6b7280' }}>
+                                <span className="customer-name" style={{ fontSize: '0.85rem' }}>
+                                  {order.customer_rel?.nama || order.customer_nama || order.customer || "-"}
+                                </span>
+                                <p style={{ fontSize: '0.65rem', color: '#94a3b8', margin: 0 }}>
                                   {order.tanggal_order || order.tanggal || order.create_at || "-"}
                                 </p>
                               </div>
                             </div>
                           </td>
-                          <td style={{ padding: '1rem' }}>
-                            <span className={`status-badge ${String(order.status_pembayaran) === '2' ? 'paid' : 'unpaid'}`}>
+                          <td style={{ padding: '0.75rem 1rem' }}>
+                            <span className={`status-badge ${String(order.status_pembayaran) === '2' ? 'paid' : 'unpaid'}`} style={{ fontSize: '0.65rem' }}>
                               {String(order.status_pembayaran) === '2' ? 'Paid' : 'Unpaid'}
                             </span>
                           </td>
-                          <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, color: '#111827', fontSize: '0.85rem' }}>
+                          <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 700, color: '#1e293b', fontSize: '0.8rem' }}>
                             {order.total_harga_formatted || formatCurrency(order.total_harga)}
                           </td>
                         </tr>
@@ -569,7 +571,7 @@ export default function Dashboard() {
 
         .customer-name { font-weight: 700; color: #1e293b; font-size: 0.9rem; }
         .avatar-small {
-          width: 32px; height: 32px; background: #f1f5f9; border-radius: 8px;
+          width: 32px; height: 32px; background: #f1f5f9; border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
           font-weight: 800; color: #475569; font-size: 11px; flex-shrink: 0;
         }
