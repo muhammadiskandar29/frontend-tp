@@ -173,6 +173,33 @@ export default function PaymentPage() {
         return;
       }
 
+      // Pre-open new tab to maintain user gesture context (Fix for Mobile Browsers)
+      const paymentWindow = window.open("", "_blank");
+
+      if (paymentWindow) {
+        paymentWindow.document.write(`
+          <html>
+            <head>
+              <title>Memproses Pembayaran...</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f8fafc; color: #334155; }
+                .loader { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
+                .brand { font-weight: 600; font-size: 1.25rem; margin-bottom: 0.5rem; color: #0f172a; }
+                .message { color: #64748b; font-size: 0.875rem; text-align: center; max-width: 80%; }
+                @keyframes spin { to { transform: rotate(360deg); } }
+              </style>
+            </head>
+            <body>
+              <div class="loader"></div>
+              <div class="brand">Menghubungkan Pembayaran</div>
+              <div class="message">Mohon jangan tutup halaman ini, Anda akan dialihkan sebentar lagi...</div>
+            </body>
+          </html>
+        `);
+        paymentWindow.document.close();
+      }
+
       try {
         setLoading(true);
 
@@ -212,13 +239,25 @@ export default function PaymentPage() {
           }
 
           toast.success(`Membuka pembayaran ${paymentMethod.toUpperCase()}...`);
-          window.open(data.redirect_url, "_blank");
+
+          if (paymentWindow) {
+            paymentWindow.location.href = data.redirect_url;
+          } else {
+            // Fallback
+            window.location.href = data.redirect_url;
+          }
         } else {
+          // Tutup window loading jika gagal
+          if (paymentWindow) paymentWindow.close();
+
           toast.error(data.message || "Gagal membuat sesi pembayaran online.");
           // Fallback manual
           router.push(`/payment?product=${encodeURIComponent(productName)}&harga=${amount}&via=manual&order_id=${orderId}&sumber=dashboard`);
         }
       } catch (error) {
+        // Tutup window loading jika error
+        if (paymentWindow) paymentWindow.close();
+
         console.error("[PAYMENT_PAGE] Error initiating payment:", error);
         toast.error("Gagal terhubung ke gerbang pembayaran.");
       } finally {
