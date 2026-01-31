@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { getOrders } from "@/lib/sales/orders";
 import dynamic from "next/dynamic";
+import ProductPerformanceAll from "@/components/sales/ProductPerformanceAll";
+import axios from "axios";
 
 // Lazy load heavy components
 const LazyChart = dynamic(
@@ -226,6 +228,11 @@ export default function Dashboard() {
   const [loadingStatistics, setLoadingStatistics] = useState(true);
   const [periodInfo, setPeriodInfo] = useState(null);
 
+  // State for Global Product Statistics (Statistics-All)
+  const [productStatsAll, setProductStatsAll] = useState([]);
+  const [productSummaryAll, setProductSummaryAll] = useState(null);
+  const [loadingProdAll, setLoadingProdAll] = useState(true);
+
   // State for Recent Activity Lists
   const [recentOrders, setRecentOrders] = useState([]);
   const [recentFollowups, setRecentFollowups] = useState([]);
@@ -323,6 +330,29 @@ export default function Dashboard() {
     loadSalesStatistics();
   }, [loadSalesStatistics]);
 
+  // Load Global Product Statistics (All Staff)
+  const loadGlobalProductStats = useCallback(async () => {
+    setLoadingProdAll(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get("/api/sales/dashboard/produk-statistics-all", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        setProductStatsAll(response.data.data.produk_statistics || []);
+        setProductSummaryAll(response.data.data.summary || null);
+      }
+    } catch (err) {
+      console.error("Error loading global product stats:", err);
+    } finally {
+      setLoadingProdAll(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadGlobalProductStats();
+  }, [loadGlobalProductStats]);
+
   // Scroll effect untuk staff cards
   useEffect(() => {
     if (loadingStatistics || salesStatistics.length === 0) return;
@@ -386,6 +416,12 @@ export default function Dashboard() {
             ))}
           </div>
         </section>
+
+        <ProductPerformanceAll
+          productStats={productStatsAll}
+          productSummary={productSummaryAll}
+          loading={loadingProdAll}
+        />
 
         <section className="dashboard-staff-section">
           <div className="dashboard-staff-layout">
