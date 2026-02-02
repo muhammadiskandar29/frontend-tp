@@ -1326,8 +1326,8 @@ export default function DaftarPesanan() {
               </button>
             </div>
           </div>
-          <div className="orders-table__wrapper">
-            <table className="table-orders">
+          <div className="orders-table__wrapper" style={{ padding: '0 1rem', background: '#f8fafc' }}>
+            <table className="table-orders" style={{ borderCollapse: 'separate', borderSpacing: '0 0.5rem' }}>
               <thead>
                 <tr>
                   {/* STICKY LEFT 1: Customer */}
@@ -1384,13 +1384,23 @@ export default function DaftarPesanan() {
 
                       return (
                         <React.Fragment key={latestOrder.id || `${latestOrder.id}-${i}`}>
-                          {/* 1. Main Customer Row (Clean) */}
-                          <tr key={`main-${custId}`} style={{ borderBottom: 'none' }}>
+                          {/* 1. Main Customer Row (Clean) - Styling as Card Header */}
+                          <tr key={`main-${custId}`} style={{
+                            border: '1px solid #e2e8f0',
+                            borderBottom: 'none',
+                            background: '#fff',
+                            borderRadius: '12px 12px 0 0' // Cannot be applied to tr directly well, but td can
+                          }}>
                             {/* STICKY LEFT 1: Customer */}
-                            <td className="sticky-left-1" style={{ borderBottom: 'none' }}>
+                            <td className="sticky-left-1" style={{
+                              borderTopLeftRadius: '12px',
+                              padding: '16px',
+                              borderBottom: 'none',
+                              background: '#fff'
+                            }}>
                               <div className="customer-cell" style={{ display: "flex", flexDirection: "column" }}>
-                                <span className="customer-name" style={{ fontSize: "1rem", fontWeight: 700 }}>{customerNama}</span>
-                                <span className="customer-detail">
+                                <span className="customer-name" style={{ fontSize: "1.05rem", fontWeight: 700, color: "#1e293b" }}>{customerNama}</span>
+                                <span className="customer-detail" style={{ fontSize: "0.9rem", color: "#475569", marginTop: "4px" }}>
                                   {latestOrder.customer_rel?.wa ? `+${latestOrder.customer_rel.wa}` : "-"}
                                 </span>
                                 <span className="customer-detail" style={{ fontSize: "0.85rem", marginTop: "2px", color: "#64748b" }}>
@@ -1409,7 +1419,14 @@ export default function DaftarPesanan() {
                             <td style={{ display: 'none' }}></td>
 
                             {/* Action Column */}
-                            <td style={{ textAlign: 'right', verticalAlign: 'middle', borderBottom: 'none' }}>
+                            <td style={{
+                              textAlign: 'right',
+                              verticalAlign: 'middle',
+                              borderBottom: 'none',
+                              borderTopRightRadius: '12px',
+                              padding: '16px',
+                              background: '#fff'
+                            }}>
                               <div className="action-group" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem' }}>
                                 {otherCount > 0 && (
                                   <button
@@ -1441,16 +1458,23 @@ export default function DaftarPesanan() {
                             </td>
                           </tr>
 
-                          {/* 2. Detail Row (Always Visible) - Contains Nested Table */}
-                          <tr key={`detail-${custId}`}>
-                            <td colSpan={2} style={{ padding: '0 0 1.5rem 0', borderTop: 'none' }}>
+                          {/* 2. Detail Row (Always Visible) - Styling as Card Body */}
+                          <tr key={`detail-${custId}`} style={{
+                            border: '1px solid #e2e8f0',
+                            borderTop: 'none',
+                            background: '#fff',
+                            marginBottom: '1rem' // This doesn't work on tr, need empty row for spacing
+                          }}>
+                            <td colSpan={2} style={{
+                              padding: '0 16px 16px 16px',
+                              borderTop: 'none',
+                              borderBottomLeftRadius: '12px',
+                              borderBottomRightRadius: '12px'
+                            }}>
                               <div style={{
-                                marginLeft: '1rem',
-                                marginRight: '1rem',
-                                background: 'white',
+                                background: '#f8fafc',
                                 borderRadius: '8px',
                                 border: '1px solid #e2e8f0',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
                                 overflow: 'hidden'
                               }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
