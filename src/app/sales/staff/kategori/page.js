@@ -168,7 +168,7 @@ export default function AdminKategoriPage() {
           <div className="panel__header">
             <div>
               <p className="panel__eyebrow">Directory</p>
-              <h3 className="panel__title">Category roster</h3>
+              <h3 className="panel__title">Category</h3>
             </div>
             <button
               className="customers-button customers-button--primary"

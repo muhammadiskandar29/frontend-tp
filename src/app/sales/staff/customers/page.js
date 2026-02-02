@@ -52,7 +52,7 @@ export default function AdminCustomerPage() {
   const [loading, setLoading] = useState(false);
   const [paginationInfo, setPaginationInfo] = useState(null); // Store pagination info from backend
   const perPage = 15; // Data per halaman
-  
+
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput, 500); // Debounce 500ms
   const [showEdit, setShowEdit] = useState(false);
@@ -65,18 +65,18 @@ export default function AdminCustomerPage() {
   // State untuk nested modal (dari viewCustomer)
   const [showEditFromView, setShowEditFromView] = useState(false);
   const [showDeleteFromView, setShowDeleteFromView] = useState(false);
-  
+
   // Filter state - hanya verifikasi
   const [verifikasiFilter, setVerifikasiFilter] = useState("all"); // all | verified | unverified
   const [showVerifikasiDropdown, setShowVerifikasiDropdown] = useState(false);
-  
+
   // Filter options
   const VERIFIKASI_OPTIONS = [
     { value: "all", label: "Semua Verifikasi" },
     { value: "verified", label: "Verified" },
     { value: "unverified", label: "Unverified" },
   ];
-  
+
   // Convert filter untuk API (termasuk search)
   const filters = useMemo(() => ({
     verifikasi: verifikasiFilter,
@@ -92,7 +92,7 @@ export default function AdminCustomerPage() {
     const unverified = customers.filter((c) => c.verifikasi !== "1" && c.verifikasi !== true).length;
     return { verified, unverified };
   }, [customers]);
-  
+
   const fetchingRef = useRef(false); // Prevent multiple simultaneous fetches
 
   // 🔹 Fetch customers dengan fallback pagination - optimized
@@ -113,11 +113,11 @@ export default function AdminCustomerPage() {
       }
 
       const result = await getCustomers(pageNumber, perPage, filters);
-      
+
       if (result.success && result.data && Array.isArray(result.data)) {
         // Filter dan sort data di frontend untuk memastikan filter bekerja dengan benar
         let filteredData = [...result.data];
-        
+
         // Apply verifikasi filter jika bukan "all" (fallback jika backend tidak memproses filter)
         if (filters.verifikasi && filters.verifikasi !== "all") {
           if (filters.verifikasi === "verified") {
@@ -130,23 +130,23 @@ export default function AdminCustomerPage() {
             );
           }
         }
-        
+
         // Sort data dari terbaru ke terlama berdasarkan create_at atau id
         filteredData.sort((a, b) => {
           // Prioritas: create_at jika ada, fallback ke id
           const dateA = a.create_at ? new Date(a.create_at).getTime() : 0;
           const dateB = b.create_at ? new Date(b.create_at).getTime() : 0;
-          
+
           if (dateA !== 0 && dateB !== 0) {
             return dateB - dateA; // Terbaru di atas
           }
-          
+
           // Fallback ke id jika create_at tidak ada
           const idA = a.id || 0;
           const idB = b.id || 0;
           return idB - idA; // ID lebih besar (terbaru) di atas
         });
-        
+
         // Selalu replace data (bukan append) - setiap page menampilkan data yang berbeda
         setCustomers(filteredData);
 
@@ -170,7 +170,7 @@ export default function AdminCustomerPage() {
         setCustomers([]);
         setHasMore(false);
       }
-      
+
       setLoading(false);
       fetchingRef.current = false;
     } catch (err) {
@@ -234,13 +234,13 @@ export default function AdminCustomerPage() {
     setHasMore(true);
     await fetchCustomers(1);
     if (message) {
-    if (type === "error") {
-      toastError(message);
-    } else if (type === "warning") {
-      toastWarning(message);
-    } else {
-      toastSuccess(message);
-    }
+      if (type === "error") {
+        toastError(message);
+      } else if (type === "warning") {
+        toastWarning(message);
+      } else {
+        toastSuccess(message);
+      }
     }
   };
 
@@ -313,7 +313,7 @@ export default function AdminCustomerPage() {
   return (
     <Layout title="Manage Customers">
       <div className="dashboard-shell customers-shell">
-      <section className="dashboard-summary customers-summary">
+        <section className="dashboard-summary customers-summary">
           <article className="summary-card summary-card--combined summary-card--three-cols">
             <div className="summary-card__column">
               <div className={`summary-card__icon accent-orange`}>
@@ -398,11 +398,11 @@ export default function AdminCustomerPage() {
           <div className="panel__header">
             <div>
               <p className="panel__eyebrow">Directory</p>
-              <h3 className="panel__title">Customer roster</h3>
+              <h3 className="panel__title">Customer</h3>
             </div>
             <div className="customers-toolbar-buttons">
-              <button 
-                className="customers-button customers-button--secondary" 
+              <button
+                className="customers-button customers-button--secondary"
                 onClick={() => router.push("/sales/followup/report")}
               >
                 <i className="pi pi-chart-bar" style={{ marginRight: "6px" }} />
@@ -429,81 +429,80 @@ export default function AdminCustomerPage() {
                   <p className="customers-empty">Loading data...</p>
                 ) : customers.length > 0 ? (
                   customers.map((cust, i) => (
-                  <div className="customers-table__row" key={cust.id || `${cust.email}-${i}`}>
-                    {/* Id Member */}
-                    <div className="customers-table__cell" data-label="Member Id">
-                      {cust.memberID || "-"}
-                    </div>
-                    
-                    {/* Nama - Klikable */}
-                    <div className="customers-table__cell customers-table__cell--strong" data-label="Nama">
-                      <div className="customer-table__info">
+                    <div className="customers-table__row" key={cust.id || `${cust.email}-${i}`}>
+                      {/* Id Member */}
+                      <div className="customers-table__cell" data-label="Member Id">
+                        {cust.memberID || "-"}
+                      </div>
+
+                      {/* Nama - Klikable */}
+                      <div className="customers-table__cell customers-table__cell--strong" data-label="Nama">
+                        <div className="customer-table__info">
+                          <span
+                            className="customer-table__name"
+                            onClick={() => handleView(cust)}
+                          >
+                            {cust.nama || "-"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Email */}
+                      <div className="customers-table__cell" data-label="Email">
+                        {cust.email || "-"}
+                      </div>
+
+                      {/* No WA */}
+                      <div className="customers-table__cell" data-label="No WA">
+                        {cust.wa ? (
+                          <a
+                            href={`https://wa.me/${cust.wa.replace(/[^0-9]/g, "").replace(/^0/, "62")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="wa-link"
+                            title={`Chat WhatsApp ${cust.wa}`}
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="14"
+                              height="14"
+                              fill="currentColor"
+                            >
+                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                            </svg>
+                            <span>{cust.wa}</span>
+                          </a>
+                        ) : (
+                          "-"
+                        )}
+                      </div>
+
+                      {/* Verifikasi */}
+                      <div className="customers-table__cell" data-label="Verifikasi">
                         <span
-                          className="customer-table__name"
-                          onClick={() => handleView(cust)}
+                          className={`customers-verif-tag ${cust.verifikasi === "1" || cust.verifikasi === true ? "is-verified" : "is-unverified"
+                            }`}
                         >
-                          {cust.nama || "-"}
+                          {cust.verifikasi === "1" || cust.verifikasi === true ? "Verified" : "Unverified"}
                         </span>
                       </div>
+
+                      {/* Pesanan Sukses - Tampilkan "-" untuk sementara */}
+                      <div className="customers-table__cell" data-label="Pesanan Sukses">
+                        {"-"}
+                      </div>
+
+                      {/* Total Net Revenue - Tampilkan "-" untuk sementara */}
+                      <div className="customers-table__cell" data-label="Total Net Revenue">
+                        {"-"}
+                      </div>
                     </div>
-                    
-                    {/* Email */}
-                    <div className="customers-table__cell" data-label="Email">
-                      {cust.email || "-"}
-                    </div>
-                    
-                    {/* No WA */}
-                    <div className="customers-table__cell" data-label="No WA">
-                      {cust.wa ? (
-                        <a
-                          href={`https://wa.me/${cust.wa.replace(/[^0-9]/g, "").replace(/^0/, "62")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="wa-link"
-                          title={`Chat WhatsApp ${cust.wa}`}
-                        >
-                          <svg 
-                            viewBox="0 0 24 24" 
-                            width="14" 
-                            height="14" 
-                            fill="currentColor"
-                          >
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                          </svg>
-                          <span>{cust.wa}</span>
-                        </a>
-                      ) : (
-                        "-"
-                      )}
-                    </div>
-                    
-                    {/* Verifikasi */}
-                    <div className="customers-table__cell" data-label="Verifikasi">
-                      <span
-                        className={`customers-verif-tag ${
-                          cust.verifikasi === "1" || cust.verifikasi === true ? "is-verified" : "is-unverified"
-                        }`}
-                      >
-                        {cust.verifikasi === "1" || cust.verifikasi === true ? "Verified" : "Unverified"}
-                      </span>
-                    </div>
-                    
-                    {/* Pesanan Sukses - Tampilkan "-" untuk sementara */}
-                    <div className="customers-table__cell" data-label="Pesanan Sukses">
-                      {"-"}
-                    </div>
-                    
-                    {/* Total Net Revenue - Tampilkan "-" untuk sementara */}
-                    <div className="customers-table__cell" data-label="Total Net Revenue">
-                      {"-"}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="customers-empty">
-                  {debouncedSearch.trim() ? "Tidak ada hasil pencarian." : "Tidak ada data customer"}
-                </p>
-              )}
+                  ))
+                ) : (
+                  <p className="customers-empty">
+                    {debouncedSearch.trim() ? "Tidak ada hasil pencarian." : "Tidak ada data customer"}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -511,8 +510,8 @@ export default function AdminCustomerPage() {
           {/* Pagination dengan Next/Previous Button */}
           <div className="customers-pagination" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", padding: "1.5rem", flexWrap: "wrap" }}>
             {/* Previous Button */}
-              <button
-                className="customers-pagination__btn"
+            <button
+              className="customers-pagination__btn"
               onClick={handlePrevPage}
               disabled={page === 1 || loading}
               aria-label="Previous page"
@@ -531,15 +530,15 @@ export default function AdminCustomerPage() {
                 justifyContent: "center",
                 transition: "all 0.2s ease"
               }}
-              >
-                <i className="pi pi-chevron-left" />
+            >
+              <i className="pi pi-chevron-left" />
               Previous
-              </button>
+            </button>
 
             {/* Page Info */}
-            <div style={{ 
-              display: "flex", 
-              alignItems: "center", 
+            <div style={{
+              display: "flex",
+              alignItems: "center",
               gap: "0.5rem",
               fontSize: "0.95rem",
               color: "var(--dash-text)",
@@ -554,13 +553,13 @@ export default function AdminCustomerPage() {
                 <span>
                   Page {paginationInfo?.current_page || page} of {paginationInfo?.last_page || "?"}
                   {paginationInfo?.total && ` (${paginationInfo.total} total)`}
-              </span>
+                </span>
               )}
             </div>
 
             {/* Next Button */}
-              <button
-                className="customers-pagination__btn"
+            <button
+              className="customers-pagination__btn"
               onClick={handleNextPage}
               disabled={!hasMore || loading}
               aria-label="Next page"
@@ -581,9 +580,9 @@ export default function AdminCustomerPage() {
               }}
             >
               Next
-                <i className="pi pi-chevron-right" />
-              </button>
-            </div>
+              <i className="pi pi-chevron-right" />
+            </button>
+          </div>
         </section>
 
         {/* MODALS */}

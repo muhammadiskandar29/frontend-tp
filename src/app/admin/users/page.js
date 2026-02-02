@@ -42,13 +42,13 @@ const DEFAULT_TOAST = { show: false, message: "", type: "success" };
 
 const formatDate = (value) => {
   if (!value) return "-";
-  
+
   // Handle format dd-mm-yyyy dari backend
   if (/^\d{2}-\d{2}-\d{4}$/.test(value)) {
     const [day, month, year] = value.split("-");
     return `${day}/${month}/${year}`;
   }
-  
+
   // Handle format lain (ISO, dll)
   const normalized = value.toString().replace(/-/g, "/");
   const parsed = new Date(normalized);
@@ -102,7 +102,7 @@ export default function AdminUsersPage() {
     });
   }, [users, search]);
 
-const summaryCards = useMemo(
+  const summaryCards = useMemo(
     () => [
       {
         label: "Active users",
@@ -141,11 +141,11 @@ const summaryCards = useMemo(
       console.log("[CREATE_USER] Creating user with payload:", newUser);
       const result = await createUser(newUser);
       console.log("[CREATE_USER] Create result:", result);
-      
+
       if (!result.success) {
         throw new Error(result.message || "Gagal menambahkan user");
       }
-      
+
       await refreshUsers();
       showToast("User berhasil ditambahkan!");
     } catch (err) {
@@ -156,7 +156,7 @@ const summaryCards = useMemo(
         data: err.data,
         validationErrors: err.validationErrors
       });
-      
+
       // Re-throw error dengan detail untuk ditampilkan di modal
       throw err;
     } finally {
@@ -174,11 +174,11 @@ const summaryCards = useMemo(
         newEmail: updatedData.email,
         data: updatedData
       });
-      
+
       const result = await updateUser(selectedUser.id, updatedData);
-      
+
       console.log("[UPDATE_USER] Update result:", result);
-      
+
       // ⚠️ PERINGATAN: Jika email berubah, backend harus update email di tabel authentication juga
       if (selectedUser.email !== updatedData.email) {
         // Set warning modal data
@@ -188,12 +188,12 @@ const summaryCards = useMemo(
           newEmail: updatedData.email,
         });
         setShowEmailWarning(true);
-        
+
         showToast(
           `Email berubah! User harus login dengan email lama sampai backend di-fix.`,
           "warning"
         );
-        
+
         // Log untuk debugging
         console.warn("[EMAIL_CHANGE] Email changed but backend must update authentication table:", {
           userId: selectedUser.id,
@@ -205,7 +205,7 @@ const summaryCards = useMemo(
       } else {
         showToast("Perubahan berhasil disimpan!");
       }
-      
+
       await refreshUsers();
     } catch (err) {
       console.error("[UPDATE_USER] Error updating user:", err);
@@ -232,7 +232,7 @@ const summaryCards = useMemo(
     }
   };
 
-const handleCloseModals = () => {
+  const handleCloseModals = () => {
     setShowAdd(false);
     setShowEdit(false);
     setShowDelete(false);
@@ -284,7 +284,7 @@ const handleCloseModals = () => {
           <div className="panel__header">
             <div>
               <p className="panel__eyebrow">Directory</p>
-              <h3 className="panel__title">Team roster</h3>
+              <h3 className="panel__title">Team</h3>
             </div>
             <span className="panel__meta">{filteredUsers.length} active members</span>
           </div>
@@ -435,7 +435,7 @@ const handleCloseModals = () => {
             <div className="toast-content">
               <div className="toast-message">{toast.message}</div>
             </div>
-            <button 
+            <button
               className="toast-close"
               onClick={() => setToast({ show: false, message: "", type: "success" })}
               aria-label="Close"

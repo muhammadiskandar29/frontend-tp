@@ -146,14 +146,14 @@ export default function AdminProductsPage() {
           <div className="panel__header">
             <div>
               <p className="panel__eyebrow">Directory</p>
-              <h3 className="panel__title">Product roster</h3>
+              <h3 className="panel__title">Product</h3>
             </div>
             <button
               className="customers-button customers-button--primary"
               onClick={() => router.push("/sales/products/addProducts")}
             >
               + Tambah Produk
-            </button>          
+            </button>
           </div>
 
           {error && (
@@ -223,14 +223,14 @@ export default function AdminProductsPage() {
                                     .replace(/[^a-z0-9 -]/g, "")
                                     .replace(/\s+/g, "-")
                                     .replace(/-+/g, "-");
-                                
+
                                 let kodeProduk = p.kode || (p.url ? p.url.replace(/^\//, '') : null);
-                                
+
                                 // Jika kode mengandung spasi atau karakter tidak valid, generate ulang dari nama
                                 if (!kodeProduk || kodeProduk.includes(' ') || kodeProduk.includes('%20')) {
                                   kodeProduk = generateSlug(p.nama);
                                 }
-                                
+
                                 if (kodeProduk) {
                                   window.open(`/landing/${kodeProduk}`, '_blank');
                                 } else {

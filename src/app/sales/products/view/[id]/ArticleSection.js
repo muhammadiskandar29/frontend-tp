@@ -132,7 +132,7 @@ export default function ArticleSection({ productName }) {
     <div className="article-section-container">
       {view === "list" ? (
         <div className="article-list-view fade-in">
-          {/* Roster Header */}
+          {/* Header */}
           <div className="card-header-inner">
             <div className="card-title-group">
               <span className="card-subtitle">EXCLUSIVE ACCESS</span>
@@ -141,9 +141,6 @@ export default function ArticleSection({ productName }) {
             <div className="header-actions">
               <button className="btn-add-bonus" onClick={() => setShowAddModal(true)}>
                 <Plus size={16} /> Tambahkan Bonus Artikel
-              </button>
-              <button className="btn-primary-orange" onClick={handleCreate}>
-                <FileText size={16} /> Buat Artikel Baru
               </button>
             </div>
           </div>

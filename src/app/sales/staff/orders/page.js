@@ -1314,7 +1314,7 @@ export default function DaftarPesanan() {
           <div className="panel__header">
             <div>
               <p className="panel__eyebrow">Directory</p>
-              <h3 className="panel__title">Order roster</h3>
+              <h3 className="panel__title">Order</h3>
             </div>
             <div className="customers-toolbar-buttons">
 
