@@ -32,6 +32,7 @@ const AddOrders = dynamic(() => import("./addOrders"), { ssr: false });
 const PaymentHistoryModal = dynamic(() => import("./paymentHistoryModal"), { ssr: false });
 const SendWhatsappModal = dynamic(() => import("./sendWhatsappModal"), { ssr: false });
 const AddFollowUpModal = dynamic(() => import("./addFollowUpModal"), { ssr: false });
+const FilterOrdersModal = dynamic(() => import("./filterOrders"), { ssr: false });
 
 // Use Next.js proxy to avoid CORS
 const BASE_URL = "/api";
@@ -796,6 +797,15 @@ export default function DaftarPesanan() {
     }
   }, [showFilterModal]);
 
+  // 🔹 Handle Filter Apply from Modal
+  const handleFilterApply = useCallback((newFilters) => {
+    setDateRange(newFilters.dateRange);
+    setSelectedStatusOrder(newFilters.statusOrder);
+    setSelectedStatusPembayaran(newFilters.statusPembayaran);
+    setSelectedProducts(newFilters.products);
+    setPage(1);
+  }, []);
+
   // 🔹 Next page
   const handleNextPage = useCallback(() => {
     if (loading || !hasMore) return; // Jangan load jika sedang loading atau sudah habis
@@ -1259,52 +1269,30 @@ export default function DaftarPesanan() {
               <span className="orders-search__icon pi pi-search" />
             </div>
             <div className="orders-toolbar-buttons">
-
               {/* Filter Icon Button */}
               <button
                 type="button"
                 onClick={() => setShowFilterModal(true)}
                 className="customers-button customers-button--secondary"
-                title="Filter"
+                title="Filter Pesanan"
+                style={{ height: "42px", display: "flex", alignItems: "center", gap: "8px", padding: "0 16px", background: "white", border: "1px solid #e2e8f0" }}
               >
-                <Filter size={16} />
+                <Filter size={18} />
+                <span>Filter</span>
+                {(selectedStatusOrder.length > 0 || selectedStatusPembayaran.length > 0 || selectedProducts.length > 0 || (dateRange && dateRange[0])) && (
+                  <span style={{
+                    background: "#f97316",
+                    color: "white",
+                    fontSize: "0.7rem",
+                    padding: "2px 6px",
+                    borderRadius: "10px",
+                    marginLeft: "4px"
+                  }}>
+                    {(selectedStatusOrder.length + selectedStatusPembayaran.length + selectedProducts.length + (dateRange ? 1 : 0))}
+                  </span>
+                )}
               </button>
-              <div style={{ position: "relative" }}>
-                <Calendar
-                  value={dateRange}
-                  onChange={(e) => setDateRange(e.value)}
-                  selectionMode="range"
-                  readOnlyInput
-                  showIcon
-                  icon="pi pi-calendar"
-                  placeholder="Pilih tanggal"
-                  dateFormat="dd M yyyy"
-                  monthNavigator
-                  yearNavigator
-                  yearRange="2020:2030"
-                  style={{
-                    width: "100%",
-                    minWidth: "250px"
-                  }}
-                  inputStyle={{
-                    width: "100%",
-                    padding: "0.55rem 2.2rem 0.55rem 0.75rem",
-                    border: "1px solid #e9ecef",
-                    borderRadius: "0.5rem",
-                    fontSize: "0.85rem",
-                    background: "#ffffff",
-                    color: "#212529",
-                    boxShadow: "none",
-                    cursor: "pointer"
-                  }}
-                  panelStyle={{
-                    background: "#ffffff",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "0.5rem",
-                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
-                  }}
-                />
-              </div>
+
               {(dateRange && Array.isArray(dateRange) && dateRange.length === 2 && dateRange[0] && dateRange[1]) ||
                 selectedProducts.length > 0 ||
                 selectedStatusOrder.length > 0 ||
@@ -1313,8 +1301,9 @@ export default function DaftarPesanan() {
                   onClick={handleResetFilters}
                   className="customers-button customers-button--secondary"
                   title="Reset Filter"
+                  style={{ height: "42px", color: "#ef4444", borderColor: "#ef4444", background: "white" }}
                 >
-                  <i className="pi pi-times" />
+                  <X size={18} />
                   Reset
                 </button>
               ) : null}
@@ -2895,6 +2884,21 @@ export default function DaftarPesanan() {
         </>
       )}
 
+      {/* Modal Filter Orders */}
+      {showFilterModal && (
+        <FilterOrdersModal
+          onClose={() => setShowFilterModal(false)}
+          onApply={handleFilterApply}
+          currentFilters={{
+            dateRange,
+            statusOrder: selectedStatusOrder,
+            statusPembayaran: selectedStatusPembayaran,
+            products: selectedProducts,
+          }}
+          onSearchProducts={handleSearchProduct}
+          productResults={productResults}
+        />
+      )}
     </Layout>
   );
 }
