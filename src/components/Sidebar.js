@@ -242,11 +242,14 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Sync isRailExpanded with isOpen prop
+  // Sync internal states with isOpen prop from Layout
   useEffect(() => {
     if (viewport === VIEWPORT.DESKTOP) {
       setIsRailExpanded(isOpen);
       setIsExplicitlyOpened(isOpen);
+    } else if (viewport === VIEWPORT.MOBILE) {
+      // On mobile, isOpen controls the drawer
+      setIsDrawerOpen(isOpen);
     }
   }, [isOpen, viewport]);
 
@@ -563,9 +566,8 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
 
       </aside>
 
-      {/* === TOGGLE BUTTON (TABLET & MOBILE) === */}
-      {/* Hide toggle button for addProducts page - it has its own button */}
-      {(viewport === VIEWPORT.MOBILE || viewport === VIEWPORT.TABLET) && !isAddProductsPage && (
+      {/* === TOGGLE BUTTON REMOVED (Handled by Layout Header) === */}
+      {/* (viewport === VIEWPORT.MOBILE || viewport === VIEWPORT.TABLET) && !isAddProductsPage && (
         <button
           onClick={handleToggle}
           className={`sidebar-toggle-btn ${isDrawerOpen || (viewport === VIEWPORT.TABLET && isRailExpanded)
@@ -579,14 +581,17 @@ export default function Sidebar({ role, isOpen = true, onToggle }) {
         >
           <Menu size={18} />
         </button>
-      )}
+      ) */}
 
       {/* Overlay for mobile and addProducts page */}
       {(viewport === VIEWPORT.MOBILE || isAddProductsPage) && isDrawerOpen && (
         <button
           className="sidebar-overlay"
           aria-label="Close sidebar"
-          onClick={() => setIsDrawerOpen(false)}
+          onClick={() => {
+            setIsDrawerOpen(false);
+            if (onToggle) onToggle(); // Notify parent to sync state
+          }}
         />
       )}
     </>
