@@ -224,7 +224,7 @@ export default function AdminProductsPage() {
           <div className="panel__header">
             <div>
               <p className="panel__eyebrow">Directory</p>
-              <h3 className="panel__title">Product roster</h3>
+              <h3 className="panel__title">Product</h3>
             </div>
             <button
               className="customers-button customers-button--primary"

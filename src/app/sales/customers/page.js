@@ -507,7 +507,7 @@ export default function AdminCustomerPage() {
           <div className="panel__header">
             <div>
               <p className="panel__eyebrow">Directory</p>
-              <h3 className="panel__title">Customer roster</h3>
+              <h3 className="panel__title">Customer</h3>
             </div>
             <div className="customers-toolbar-buttons">
               <button

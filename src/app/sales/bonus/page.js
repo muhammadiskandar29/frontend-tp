@@ -142,7 +142,7 @@ export default function BonusProdukPage() {
                             <div className="card-header-inner">
                                 <div className="card-header-titles">
                                     <span className="eyebrow-text">DIRECTORY</span>
-                                    <h2 className="card-title">Bonus roster</h2>
+                                    <h2 className="card-title">Bonus</h2>
                                 </div>
                                 <div className="card-header-actions">
                                     <button className="btn-primary-orange" onClick={handleCreate}>
